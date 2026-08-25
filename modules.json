@@ -1,0 +1,167 @@
+{
+  "schema_version": 1,
+  "repository": "github.com/faustbrian/go-secret-envelope",
+  "go_version": "1.26.6",
+  "modules": [
+    {
+      "directory": ".",
+      "module_path": "github.com/faustbrian/go-secret-envelope",
+      "go_version": "1.26.6",
+      "packages": [
+        {
+          "module_directory": ".",
+          "directory": ".",
+          "name": "secretenvelope",
+          "import_path": "github.com/faustbrian/go-secret-envelope",
+          "kind": "public",
+          "production": true,
+          "executable": true,
+          "coverage_required": true,
+          "build_required": true,
+          "build_tags": []
+        },
+        {
+          "module_directory": ".",
+          "directory": "adapters/awskms",
+          "name": "awskms",
+          "import_path": "github.com/faustbrian/go-secret-envelope/adapters/awskms",
+          "kind": "public",
+          "production": true,
+          "executable": true,
+          "coverage_required": true,
+          "build_required": true,
+          "build_tags": []
+        },
+        {
+          "module_directory": ".",
+          "directory": "adapters/keyring",
+          "name": "keyring",
+          "import_path": "github.com/faustbrian/go-secret-envelope/adapters/keyring",
+          "kind": "public",
+          "production": true,
+          "executable": true,
+          "coverage_required": true,
+          "build_required": true,
+          "build_tags": []
+        }
+      ],
+      "purpose": "`secret-envelope` encrypts application-owned secret payloads with one-use AES-256-GCM data keys and delegates key wrapping to an explicit provider. The provider-neutral keyring adapter wraps those keys with versioned AES-256 keys delivered through an application's secret-management boundary. The optional AWS KMS adapter uses `GenerateDataKey` and `Decrypt` and also exposes a verify-only asymmetric KMS boundary for bounded externally signed raw statements. Plaintext data keys are best-effort zeroized after each operation.",
+      "lifecycle": "stable",
+      "kind": "public library",
+      "releasable": true,
+      "family": "integration-and-data-movement",
+      "family_label": "Integration And Data Movement",
+      "family_description": "Bounded external I/O, data movement, provider boundaries, and derived search state.",
+      "family_order": 7,
+      "version": "v1.0.0",
+      "tag_prefix": "v",
+      "owned_dependencies": [],
+      "reverse_owned_dependencies": [
+        "github.com/faustbrian/go-service/integration/reference-external"
+      ],
+      "external_runtime_dependencies": [
+        "github.com/aws/aws-sdk-go-v2",
+        "github.com/aws/aws-sdk-go-v2/service/kms"
+      ],
+      "required_services": [],
+      "build_tags": [],
+      "test_tags": [],
+      "interoperability_tools": [],
+      "specifications": [],
+      "conformance_corpora": [],
+      "provenance": [],
+      "goal_files": [
+        ".ai/GOAL.md",
+        ".ai/GOAL_HARDEN.md"
+      ],
+      "goal_status": "implementation-evidence-inventoried",
+      "goal_evidence": [
+        {
+          "file": ".ai/GOAL.md",
+          "requirements_sha256": "a570bd8a8494cf6789491a0848a650a3c09c9231562d6b8aa34db94bad6621ee",
+          "implementation_evidence": [
+            "CHANGELOG.md",
+            "README.md",
+            "docs/api.md",
+            "docs/architecture.md",
+            "docs/compatibility.md",
+            "docs/security.md"
+          ],
+          "verification_gates": [
+            "format-check",
+            "tidy-check",
+            "safety",
+            "vet",
+            "test",
+            "race",
+            "coverage",
+            "lint",
+            "staticcheck",
+            "vulnerability",
+            "secrets",
+            "licenses",
+            "sbom",
+            "fuzz",
+            "mutation",
+            "nilaway",
+            "docs",
+            "api",
+            "conformance",
+            "interoperability",
+            "benchmark"
+          ],
+          "implementation_status": "implemented-requires-fresh-verification"
+        },
+        {
+          "file": ".ai/GOAL_HARDEN.md",
+          "requirements_sha256": "17f5a34fd2f75d7620aef5eb00198d74d3a4d04f02052eaaf4f113fdcbdddc08",
+          "implementation_evidence": [
+            "CHANGELOG.md",
+            "README.md",
+            "docs/api.md",
+            "docs/architecture.md",
+            "docs/compatibility.md",
+            "docs/security.md"
+          ],
+          "verification_gates": [
+            "format-check",
+            "tidy-check",
+            "safety",
+            "vet",
+            "test",
+            "race",
+            "coverage",
+            "lint",
+            "staticcheck",
+            "vulnerability",
+            "secrets",
+            "licenses",
+            "sbom",
+            "fuzz",
+            "mutation",
+            "nilaway",
+            "docs",
+            "api",
+            "conformance",
+            "interoperability",
+            "benchmark"
+          ],
+          "implementation_status": "implemented-requires-fresh-verification"
+        }
+      ],
+      "gates": {
+        "api_compatibility": true,
+        "benchmarks": true,
+        "conformance": false,
+        "coverage": true,
+        "documentation": true,
+        "fuzz": true,
+        "lint": true,
+        "mutation": true,
+        "race": true,
+        "security": true,
+        "tests": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "schema_version": 3,
+  "reason": "Exact mutation checkpoints retained across history rewrites only when the approved old and replacement package input fingerprints, tool version, and report digest match.",
+  "verifier_migration_review": {
+    "gremlins_verifier_sha256": "9a9499ff68a8dfd49a0be7995590297a8ee563a1aa226bfd8b9361dc53058108",
+    "reason": "Each listed checkpoint was executed with the complete current Gremlins semantic patch set introduced by ac300cf3; the four omitted checkpoints require fresh campaigns.",
+    "reviewed_at": "2026-08-20"
+  },
+  "verifier_migrations": [
+    {
+      "execution_revision": "c09c5268b1facb88317f933913b2e7cf4377948b",
+      "gate_input_digest": "08a38a496f3f80e6ce37d9243b6931b13a44e3966d8ef4bf18e730702aedfa2a",
+      "gremlins_verifier_sha256": "9a9499ff68a8dfd49a0be7995590297a8ee563a1aa226bfd8b9361dc53058108",
+      "gremlins_version": "v0.6.0",
+      "module": ".",
+      "package": ".",
+      "report_sha256": "7233c257d952ada5ef4f232dc482a590145d38c885dfa106ee3cb0c1aae2cb8e"
+    },
+    {
+      "execution_revision": "c09c5268b1facb88317f933913b2e7cf4377948b",
+      "gate_input_digest": "fe87f6ae18ba0602f00f7b83449fd2ad837d853ee2ab10c53365928aa2ac0c69",
+      "gremlins_verifier_sha256": "9a9499ff68a8dfd49a0be7995590297a8ee563a1aa226bfd8b9361dc53058108",
+      "gremlins_version": "v0.6.0",
+      "module": ".",
+      "package": "adapters/awskms",
+      "report_sha256": "c15338433b049c12d395496ff4b941fa6a109eb33dd4e600e9b08bd8f8223d4e"
+    },
+    {
+      "execution_revision": "c09c5268b1facb88317f933913b2e7cf4377948b",
+      "gate_input_digest": "d5f5bf7bf090ca99e645811e146740fdae1a1dfa7f899b49bb0573cfda06c912",
+      "gremlins_verifier_sha256": "9a9499ff68a8dfd49a0be7995590297a8ee563a1aa226bfd8b9361dc53058108",
+      "gremlins_version": "v0.6.0",
+      "module": ".",
+      "package": "adapters/keyring",
+      "report_sha256": "7f1527f687f1160963189db572f080b3313d9c03937fb830eee414cedc14b125"
+    }
+  ],
+  "entries": [
+    {
+      "module": ".",
+      "package": ".",
+      "execution_revision": "c09c5268b1facb88317f933913b2e7cf4377948b",
+      "gate_input_digest": "08a38a496f3f80e6ce37d9243b6931b13a44e3966d8ef4bf18e730702aedfa2a",
+      "replacement_gate_input_digest": "4df424ebfe100004e6fa086a5e8f329961ab0632145c61138873688db80b2b20",
+      "gremlins_version": "v0.6.0",
+      "gremlins_verifier_sha256": "9a9499ff68a8dfd49a0be7995590297a8ee563a1aa226bfd8b9361dc53058108",
+      "report_sha256": "7233c257d952ada5ef4f232dc482a590145d38c885dfa106ee3cb0c1aae2cb8e"
+    },
+    {
+      "module": ".",
+      "package": "adapters/awskms",
+      "execution_revision": "c09c5268b1facb88317f933913b2e7cf4377948b",
+      "gate_input_digest": "fe87f6ae18ba0602f00f7b83449fd2ad837d853ee2ab10c53365928aa2ac0c69",
+      "replacement_gate_input_digest": "bb248036fd53a91864de18eb30f7811ca5e6ea9a2e9e1dfc55640c65fdac9d8a",
+      "gremlins_version": "v0.6.0",
+      "gremlins_verifier_sha256": "9a9499ff68a8dfd49a0be7995590297a8ee563a1aa226bfd8b9361dc53058108",
+      "report_sha256": "c15338433b049c12d395496ff4b941fa6a109eb33dd4e600e9b08bd8f8223d4e"
+    },
+    {
+      "module": ".",
+      "package": "adapters/keyring",
+      "execution_revision": "c09c5268b1facb88317f933913b2e7cf4377948b",
+      "gate_input_digest": "d5f5bf7bf090ca99e645811e146740fdae1a1dfa7f899b49bb0573cfda06c912",
+      "replacement_gate_input_digest": "5f822977567a59d4a4f265892eb3f9abaa80443d84b8b0c447e2800177b79b75",
+      "gremlins_version": "v0.6.0",
+      "gremlins_verifier_sha256": "9a9499ff68a8dfd49a0be7995590297a8ee563a1aa226bfd8b9361dc53058108",
+      "report_sha256": "7f1527f687f1160963189db572f080b3313d9c03937fb830eee414cedc14b125"
+    }
+  ]
+}

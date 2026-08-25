@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "repository": "github.com/faustbrian/go-secret-envelope",
+  "packages": [
+    {
+      "module_directory": ".",
+      "directory": ".",
+      "name": "secretenvelope",
+      "import_path": "github.com/faustbrian/go-secret-envelope",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "adapters/awskms",
+      "name": "awskms",
+      "import_path": "github.com/faustbrian/go-secret-envelope/adapters/awskms",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "adapters/keyring",
+      "name": "keyring",
+      "import_path": "github.com/faustbrian/go-secret-envelope/adapters/keyring",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    }
+  ]
+}

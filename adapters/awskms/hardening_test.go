@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/kms/types"
-	secretenvelope "github.com/faustbrian/golib/pkg/secret-envelope"
+	secretenvelope "github.com/faustbrian/go-secret-envelope"
 )
 
 func TestProviderRejectsNilClientsAndReceivers(t *testing.T) {

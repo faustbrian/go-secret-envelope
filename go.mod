@@ -1,4 +1,4 @@
-module github.com/faustbrian/golib/pkg/secret-envelope
+module github.com/faustbrian/go-secret-envelope
 
 go 1.26.6
 

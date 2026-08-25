@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	secretenvelope "github.com/faustbrian/golib/pkg/secret-envelope"
+	secretenvelope "github.com/faustbrian/go-secret-envelope"
 )
 
 func TestProviderWrapsAndUnwrapsDataKeysByReferenceAndContext(

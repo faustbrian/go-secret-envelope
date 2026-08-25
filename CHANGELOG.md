@@ -4,6 +4,8 @@ All notable changes follow Keep a Changelog and semantic versioning.
 
 ## Unreleased
 
+## 1.0.0 - 2026-08-25
+
 ### Documentation
 
 - Link the package README to the repository-wide Golib documentation portal.
@@ -24,6 +26,7 @@ All notable changes follow Keep a Changelog and semantic versioning.
 
 ### Changed
 
+- Publish the module from its standalone `github.com/faustbrian/go-secret-envelope` identity while preserving its documented API and behavior.
 - Increased the authenticated plaintext bound to 4 MiB for bounded encrypted
   evidence and object-storage payloads.
 - Hardened exact context, envelope, wrapped-key, and AWS KMS signature request

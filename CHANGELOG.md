@@ -4,6 +4,19 @@ All notable changes follow Keep a Changelog and semantic versioning.
 
 ## Unreleased
 
+### Changed
+
+- Replace copied repository tooling with the pinned shared `golib` contract.
+- Preserve mutation checkpoints and their approved migration ledger under
+  `.verification`, and replace the API checksum with an explicit exported API
+  documentation baseline.
+- Use the shared immutable CI workflow without changing the package API or
+  runtime behavior.
+
+### Documentation
+
+- Add a documentation index and remove the archived monorepo portal reference.
+
 ## 1.0.0 - 2026-08-25
 
 ### Changed

@@ -1,0 +1,326 @@
+package secretenvelope // import "github.com/faustbrian/go-secret-envelope"
+
+Package secretenvelope provides authenticated envelope encryption for
+application-owned secret payloads.
+
+Encryption contexts are non-secret associated data. They must use stable
+identifiers and field labels, never credentials or customer payloads.
+
+CONSTANTS
+
+const (
+	DataKeySize      = 32
+	NonceSize        = 12
+	MaxPlaintextSize = 4 << 20
+
+	MaxEnvelopeSize = envelopeHeaderSize +
+		maxKeyReferenceSize +
+		maxEncryptedDataKeySize +
+		NonceSize +
+		MaxPlaintextSize +
+		16
+)
+
+VARIABLES
+
+var (
+	ErrServiceRequired = errors.New("secret envelope service is required")
+	ErrKeyProvider     = errors.New("secret envelope key provider failed")
+	ErrInvalidRequest  = errors.New("secret envelope request is invalid")
+	ErrEntropy         = errors.New("secret envelope nonce generation failed")
+	ErrAuthentication  = errors.New("secret envelope authentication failed")
+)
+var ErrInvalidContext = errors.New("encryption context is invalid")
+var ErrInvalidEnvelope = errors.New("secret envelope is invalid")
+
+TYPES
+
+type Context struct {
+	// Has unexported fields.
+}
+    Context is immutable, canonical non-secret associated data.
+
+func NewContext(values map[string]string) (Context, error)
+    NewContext validates and canonically orders non-secret associated data.
+
+func (encryptionContext Context) AdditionalData() []byte
+    AdditionalData returns a caller-owned canonical encoding.
+
+func (encryptionContext Context) Values() map[string]string
+    Values returns a caller-owned copy for a key-provider API.
+
+type DataKey struct {
+	// Has unexported fields.
+}
+    DataKey transfers ownership of wrapped and plaintext key bytes to Service.
+    Its plaintext is not publicly accessible and Service zeroizes it before
+    returning.
+
+func NewDataKey(
+	plaintext []byte,
+	ciphertext []byte,
+	keyReference string,
+) (DataKey, error)
+    NewDataKey validates and takes ownership of key-provider response bytes.
+
+func (dataKey DataKey) EncryptedDataKey() []byte
+    EncryptedDataKey returns a caller-owned copy of the wrapped key.
+
+func (DataKey) GoString() string
+
+func (dataKey DataKey) KeyReference() string
+    KeyReference identifies the wrapping key without exposing plaintext.
+
+func (DataKey) LogValue() slog.Value
+    LogValue prevents data-key material from entering slog.
+
+func (DataKey) MarshalJSON() ([]byte, error)
+    MarshalJSON prevents accidental JSON disclosure of data-key material.
+
+func (DataKey) String() string
+
+type DecryptRequest struct {
+	Envelope Envelope
+	Context  Context
+}
+    DecryptRequest owns one envelope and its expected non-secret binding
+    context.
+
+type EncryptRequest struct {
+	Plaintext    []byte
+	KeyReference string
+	Context      Context
+}
+    EncryptRequest owns one plaintext payload and its non-secret binding
+    context.
+
+type Envelope struct {
+	// Has unexported fields.
+}
+    Envelope is an immutable encrypted payload and wrapped data key.
+
+func ParseEnvelope(encoded []byte) (Envelope, error)
+    ParseEnvelope validates and copies a versioned persistence representation.
+
+func (envelope Envelope) Ciphertext() []byte
+    Ciphertext returns a caller-owned copy of the authenticated ciphertext.
+
+func (envelope Envelope) EncryptedDataKey() []byte
+    EncryptedDataKey returns a caller-owned copy of the wrapped data key.
+
+func (Envelope) GoString() string
+
+func (envelope Envelope) KeyReference() string
+    KeyReference identifies the wrapping key without exposing plaintext.
+
+func (Envelope) LogValue() slog.Value
+    LogValue prevents envelope bytes and key references from entering slog.
+
+func (envelope Envelope) MarshalBinary() ([]byte, error)
+    MarshalBinary returns the stable versioned persistence representation.
+
+func (Envelope) MarshalJSON() ([]byte, error)
+    MarshalJSON prevents accidental JSON disclosure of encrypted material.
+
+func (Envelope) String() string
+
+type KeyProvider interface {
+	GenerateDataKey(context.Context, string, Context) (DataKey, error)
+	DecryptDataKey(context.Context, string, []byte, Context) ([]byte, error)
+}
+    KeyProvider wraps and unwraps one-use AES-256 data keys.
+
+type Option func(*serviceOptions) error
+    Option configures a Service without introducing ambient state.
+
+func WithNonceReader(reader io.Reader) Option
+    WithNonceReader replaces crypto/rand for deterministic tests.
+
+type Service struct {
+	// Has unexported fields.
+}
+    Service performs local AES-256-GCM operations around a key provider.
+
+func NewService(provider KeyProvider, options ...Option) (*Service, error)
+    NewService validates explicit key and entropy dependencies.
+
+func (service *Service) Decrypt(
+	ctx context.Context,
+	request DecryptRequest,
+) ([]byte, error)
+    Decrypt unwraps a data key and authenticates the expected context.
+
+func (service *Service) Encrypt(
+	ctx context.Context,
+	request EncryptRequest,
+) (Envelope, error)
+    Encrypt wraps a fresh data key and authenticates the caller's context.
+
+package awskms // import "github.com/faustbrian/go-secret-envelope/adapters/awskms"
+
+Package awskms adapts AWS KMS data-key operations to secret-envelope key
+wrapping and authenticates bounded externally signed raw statements with
+asymmetric KMS keys.
+
+Encryption context values are visible to AWS and CloudTrail. They must remain
+non-secret.
+
+VARIABLES
+
+var (
+	ErrClientRequired  = errors.New("AWS KMS client is required")
+	ErrInvalidRequest  = errors.New("AWS KMS data-key request is invalid")
+	ErrKMS             = errors.New("AWS KMS data-key operation failed")
+	ErrInvalidResponse = errors.New("AWS KMS data-key response is invalid")
+)
+var (
+	// ErrInvalidSignatureVerifier means construction or receiver state is not
+	// safe for signature verification.
+	ErrInvalidSignatureVerifier = errors.New(
+		"AWS KMS signature verifier is invalid",
+	)
+	// ErrInvalidSignatureRequest means the key, message, signature, or context
+	// cannot be sent to KMS safely.
+	ErrInvalidSignatureRequest = errors.New(
+		"AWS KMS signature verification request is invalid",
+	)
+	// ErrKMSSignatureVerification means KMS could not execute verification.
+	ErrKMSSignatureVerification = errors.New(
+		"AWS KMS signature verification failed",
+	)
+	// ErrSignatureRejected means KMS authenticated neither the message nor its
+	// signature with the configured key and algorithm.
+	ErrSignatureRejected = errors.New("AWS KMS signature was rejected")
+	// ErrInvalidSignatureResponse means KMS returned an incomplete or
+	// contradictory successful response.
+	ErrInvalidSignatureResponse = errors.New(
+		"AWS KMS signature verification response is invalid",
+	)
+)
+
+TYPES
+
+type Client interface {
+	GenerateDataKey(
+		context.Context,
+		*kms.GenerateDataKeyInput,
+		...func(*kms.Options),
+	) (*kms.GenerateDataKeyOutput, error)
+	Decrypt(
+		context.Context,
+		*kms.DecryptInput,
+		...func(*kms.Options),
+	) (*kms.DecryptOutput, error)
+}
+    Client is the least-privilege AWS KMS surface used by Provider.
+
+type Provider struct {
+	// Has unexported fields.
+}
+    Provider wraps one-use AES-256 data keys with a symmetric KMS key.
+
+func New(client Client) (*Provider, error)
+    New validates the explicit KMS client.
+
+func (provider *Provider) DecryptDataKey(
+	ctx context.Context,
+	keyReference string,
+	ciphertext []byte,
+	encryptionContext secretenvelope.Context,
+) ([]byte, error)
+    DecryptDataKey unwraps one data key with its exact key and context.
+
+func (provider *Provider) GenerateDataKey(
+	ctx context.Context,
+	keyReference string,
+	encryptionContext secretenvelope.Context,
+) (secretenvelope.DataKey, error)
+    GenerateDataKey asks KMS for a fresh AES-256 key and its wrapped copy.
+
+type SignatureClient interface {
+	Verify(
+		context.Context,
+		*kms.VerifyInput,
+		...func(*kms.Options),
+	) (*kms.VerifyOutput, error)
+}
+    SignatureClient is the least-privilege AWS KMS surface used to authenticate
+    an externally signed statement.
+
+type SignatureVerifier struct {
+	// Has unexported fields.
+}
+    SignatureVerifier authenticates bounded raw messages with one explicitly
+    reviewed asymmetric KMS signing algorithm. It never signs messages.
+
+func NewSignatureVerifier(
+	client SignatureClient,
+	algorithm types.SigningAlgorithmSpec,
+) (*SignatureVerifier, error)
+    NewSignatureVerifier validates the KMS client and fixes the accepted
+    algorithm for the verifier's lifetime.
+
+func (verifier *SignatureVerifier) Verify(
+	ctx context.Context,
+	keyReference string,
+	message []byte,
+	signature []byte,
+) error
+    Verify authenticates one exact raw message. The method owns copies of caller
+    bytes before invoking KMS and returns stable, secret-safe failure classes.
+
+package keyring // import "github.com/faustbrian/go-secret-envelope/adapters/keyring"
+
+Package keyring wraps envelope data keys with versioned AES-256 keys that are
+supplied by the application's secret-delivery boundary.
+
+VARIABLES
+
+var (
+	ErrInvalidKeyring = errors.New("keyring configuration is invalid")
+	ErrInvalidRequest = errors.New("keyring data-key request is invalid")
+	ErrKeyNotFound    = errors.New("keyring key reference is unavailable")
+	ErrEntropy        = errors.New("keyring entropy failed")
+	ErrAuthentication = errors.New("keyring data-key authentication failed")
+)
+
+TYPES
+
+type Provider struct {
+	// Has unexported fields.
+}
+    Provider wraps fresh envelope data keys with an immutable versioned keyring.
+    It is safe for concurrent use. Keys remain in process memory for the
+    provider's lifetime and are never included in text, JSON, or slog output.
+
+func New(keys map[string][]byte) (*Provider, error)
+    New validates and copies a non-empty keyring. Each value must contain
+    exactly 32 bytes and each stable reference must remain available while
+    ciphertext bearing that reference can still be read.
+
+func (provider *Provider) DecryptDataKey(
+	ctx context.Context,
+	keyReference string,
+	ciphertext []byte,
+	encryptionContext secretenvelope.Context,
+) ([]byte, error)
+    DecryptDataKey authenticates and unwraps a data key with the exact retained
+    key reference and canonical encryption context.
+
+func (provider *Provider) GenerateDataKey(
+	ctx context.Context,
+	keyReference string,
+	encryptionContext secretenvelope.Context,
+) (secretenvelope.DataKey, error)
+    GenerateDataKey creates a fresh data key and wraps it under the requested
+    versioned key reference with the canonical encryption context as AAD.
+
+func (*Provider) GoString() string
+
+func (*Provider) LogValue() slog.Value
+    LogValue prevents wrapping keys from entering structured logs.
+
+func (*Provider) MarshalJSON() ([]byte, error)
+    MarshalJSON prevents wrapping keys from entering JSON output.
+
+func (*Provider) String() string

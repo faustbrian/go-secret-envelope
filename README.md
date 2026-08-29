@@ -130,12 +130,8 @@ if err := verifier.Verify(
 - [Versioned keyrings](docs/keyring.md)
 - [AWS KMS operations](docs/aws-kms.md)
 - [Compatibility](docs/compatibility.md)
+- [Documentation index](docs/README.md)
 
 ## License
 
 MIT.
-
-## Ecosystem
-
-Use the [Golib documentation portal](https://github.com/faustbrian/golib/blob/main/docs/index.md)
-to choose companion packages, supported stacks, recipes, and operations guidance.

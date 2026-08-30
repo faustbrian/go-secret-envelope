@@ -4,6 +4,12 @@ All notable changes follow Keep a Changelog and semantic versioning.
 
 ## Unreleased
 
+### Changed
+
+- Replace copied repository tooling with the checksum-pinned
+  `go-library-tools` v1.0.13 contract while retaining package-owned policy and
+  verification evidence.
+
 ### Documentation
 
 - Replace archived monorepo links and completed execution artifacts with a

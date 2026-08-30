@@ -67,16 +67,26 @@
       "build_tags": [],
       "test_tags": [],
       "interoperability_tools": [],
-      "specifications": [],
+      "specifications": [
+        "NIST SP 800-38D GCM",
+        "FIPS 197 AES",
+        "AWS KMS SDK Go v2 service/kms v1.55.0",
+        "RFC 8017 PKCS #1 v2.2",
+        "FIPS 186-5 DSS",
+        "RFC 8032 EdDSA",
+        "FIPS 180-4 Secure Hash Standard"
+      ],
       "conformance_corpora": [],
-      "provenance": [],
+      "provenance": [
+        "specification/manifest.tsv"
+      ],
       "goal_files": [],
       "goal_status": "not-applicable",
       "goal_evidence": [],
       "gates": {
         "api_compatibility": true,
         "benchmarks": true,
-        "conformance": false,
+        "conformance": true,
         "coverage": true,
         "documentation": true,
         "fuzz": true,

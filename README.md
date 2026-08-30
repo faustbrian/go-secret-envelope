@@ -130,6 +130,7 @@ if err := verifier.Verify(
 - [Versioned keyrings](docs/keyring.md)
 - [AWS KMS operations](docs/aws-kms.md)
 - [Compatibility](docs/compatibility.md)
+- [Specification decisions](docs/specification-decisions.md)
 
 ## License
 

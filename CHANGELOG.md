@@ -6,12 +6,26 @@ All notable changes follow Keep a Changelog and semantic versioning.
 
 ### Changed
 
+- Govern the externally attributable AES-GCM and AWS KMS contracts separately
+  from the repository-owned envelope, context, keyring, and defensive policies
+  in the [specification decision register](docs/specification-decisions.md).
 - Replace copied repository tooling with the checksum-pinned
-  `go-library-tools` v1.0.13 contract while retaining package-owned policy and
+  `go-library-tools` v1.0.14 contract while retaining package-owned policy and
   verification evidence.
 
 ### Documentation
 
+- Record the initial specification decisions and their immutable content pins:
+  - SECRETENVELOPE-DEC-001 sha256:47e0973213358b254b7ca58296233b6779fcecdb761cf975c612d7492ae2b499
+  - SECRETENVELOPE-DEC-002 sha256:79bc3d45a65daba75fca8d276dd6e7d237770f9e56b02eb583604771ea34963c
+  - SECRETENVELOPE-DEC-003 sha256:5601f98b707eaa19046bcdd1b375d80029a37c331808042ef034d296e1e32808
+  - SECRETENVELOPE-DEC-004 sha256:59c31c52421cc25ec5e0bca69676f1d23d0d03d6fdf2813b573781dd86878685
+  - SECRETENVELOPE-DEC-005 sha256:c97e2dbb63e6a5db83263ac7c07d30c102462cf75391f161e3e315fcd52a6b61
+  - SECRETENVELOPE-DEC-006 sha256:26f5820f770ce12afa485176f09508f052a3507281a38d5b5afcfad18710606f
+  - SECRETENVELOPE-DEC-007 sha256:dfc96be96b5aefe65fa6a879ed37d9172e64e391b5cf43d98de84e988629a5af
+  - SECRETENVELOPE-DEC-008 sha256:8a379228e294467ae9ca437cd631a5682f12e7522d9141243fcdfae10cd89fe6
+  - SECRETENVELOPE-DEC-009 sha256:4cec1b0206c8d3496eed1377d7415db10d088e241f51c4d2552115d7f47c9289
+  - SECRETENVELOPE-DEC-010 sha256:73d3bae189459cd356d2e73815a3bf8ab66712ed01eaba307eae9167eb0d20ce
 - Replace archived monorepo links and completed execution artifacts with a
   standalone, human-oriented documentation structure.
 

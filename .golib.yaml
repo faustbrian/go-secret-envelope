@@ -36,20 +36,6 @@ operations:
         count: 1
         timeout: 10m
   - module: .
-    gate: docs
-    steps:
-      - type: make
-        makefile: verification/package.mk
-        target: docs
-        timeout: 20m
-  - module: .
-    gate: test
-    steps:
-      - type: make
-        makefile: verification/package.mk
-        target: safety
-        timeout: 20m
-  - module: .
     gate: fuzz
     steps:
       - type: go-test

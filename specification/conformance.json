@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "decisions": [
+    {
+      "id": "SECRETENVELOPE-DEC-001",
+      "authoritative_sources": ["nist-sp800-38d-source", "fips197-source"],
+      "executable_evidence": ["TestServiceEncryptsAndDecryptsAnAuthenticatedEnvelope", "TestProviderWrapsAndUnwrapsDataKeysByReferenceAndContext"],
+      "fixtures": [],
+      "fuzz": [],
+      "differential_evidence": [],
+      "differential_classification": "not assessed",
+      "public_behavior": ["Envelope payloads and keyring-wrapped data keys use AES-256-GCM with 96-bit nonces and 128-bit tags."]
+    },
+    {
+      "id": "SECRETENVELOPE-DEC-002",
+      "authoritative_sources": ["nist-sp800-38d-source"],
+      "executable_evidence": ["TestServiceEncryptsAndDecryptsAnAuthenticatedEnvelope", "TestEnvelopeParsingRejectsMalformedOrOversizedInput"],
+      "fixtures": [],
+      "fuzz": ["FuzzParseEnvelope"],
+      "differential_evidence": [],
+      "differential_classification": "not assessed",
+      "public_behavior": ["MarshalBinary and ParseEnvelope use the bounded repository-owned SEV1 format."]
+    },
+    {
+      "id": "SECRETENVELOPE-DEC-003",
+      "authoritative_sources": ["nist-sp800-38d-source"],
+      "executable_evidence": ["TestContextIsCanonicalAndImmutable", "TestServiceRejectsAContextSwap", "TestProviderAuthenticatesReferenceContextAndCiphertext"],
+      "fixtures": [],
+      "fuzz": [],
+      "differential_evidence": [],
+      "differential_classification": "not assessed",
+      "public_behavior": ["NewContext produces sorted length-prefixed authenticated context bytes."]
+    },
+    {
+      "id": "SECRETENVELOPE-DEC-004",
+      "authoritative_sources": ["nist-sp800-38d-source"],
+      "executable_evidence": ["TestEnvelopeParsingRejectsMalformedOrOversizedInput", "TestEnvelopeAcceptsExactSizeLimits"],
+      "fixtures": [],
+      "fuzz": ["FuzzParseEnvelope"],
+      "differential_evidence": [],
+      "differential_classification": "not assessed",
+      "public_behavior": ["ParseEnvelope rejects malformed, oversized, non-canonical, and trailing input."]
+    },
+    {
+      "id": "SECRETENVELOPE-DEC-005",
+      "authoritative_sources": ["nist-sp800-38d-source"],
+      "executable_evidence": ["TestProviderWrapsAndUnwrapsDataKeysByReferenceAndContext", "TestProviderUsesExactBoundedWireAllocations"],
+      "fixtures": [],
+      "fuzz": [],
+      "differential_evidence": [],
+      "differential_classification": "not assessed",
+      "public_behavior": ["The keyring adapter emits and accepts only its fixed bounded version 1 wrapped-key format."]
+    },
+    {
+      "id": "SECRETENVELOPE-DEC-006",
+      "authoritative_sources": ["nist-sp800-38d-source"],
+      "executable_evidence": ["TestServiceRejectsInvalidKeyMaterialAndEntropy", "TestProviderRejectsEntropyFailures", "TestProviderRejectsInvalidGenerateResponsesAndZeroizesKeys"],
+      "fixtures": [],
+      "fuzz": [],
+      "differential_evidence": [],
+      "differential_classification": "not assessed",
+      "public_behavior": ["Every encryption uses a fresh data key and nonce and best-effort overwrites package-owned plaintext key slices."]
+    },
+    {
+      "id": "SECRETENVELOPE-DEC-007",
+      "authoritative_sources": ["aws-kms-generate-source", "aws-kms-decrypt-source", "aws-kms-enums-source"],
+      "executable_evidence": ["TestProviderGeneratesAnAES256DataKey", "TestProviderDecryptsWithTheExactKeyAndContext"],
+      "fixtures": [],
+      "fuzz": [],
+      "differential_evidence": [],
+      "differential_classification": "not assessed",
+      "public_behavior": ["The AWS adapter requests AES_256 data keys and SYMMETRIC_DEFAULT decryption with exact context."]
+    },
+    {
+      "id": "SECRETENVELOPE-DEC-008",
+      "authoritative_sources": ["aws-kms-decrypt-source", "aws-kms-generate-source", "aws-kms-enums-source"],
+      "executable_evidence": ["TestProviderGeneratesAnAES256DataKey", "TestProviderDecryptsWithTheExactKeyAndContext", "TestProviderRejectsDecryptFailuresAndMalformedResponses"],
+      "fixtures": [],
+      "fuzz": [],
+      "differential_evidence": [],
+      "differential_classification": "not assessed",
+      "public_behavior": ["The AWS adapter persists the generated resolved key identity and requires decryption to return that exact identity and algorithm."]
+    },
+    {
+      "id": "SECRETENVELOPE-DEC-009",
+      "authoritative_sources": ["aws-kms-verify-source", "aws-kms-enums-source", "rfc8017-source", "fips186-5-source", "rfc8032-source", "fips180-4-source"],
+      "executable_evidence": ["TestSignatureVerifierAuthenticatesExactRawMessage", "TestSignatureVerifierAcceptsReviewedRawAlgorithms", "TestSignatureVerifierRejectsInvalidConstructionAndRequests"],
+      "fixtures": [],
+      "fuzz": [],
+      "differential_evidence": [],
+      "differential_classification": "not assessed",
+      "public_behavior": ["The verify-only AWS boundary accepts RAW messages with only the reviewed PSS, ECDSA, and Ed25519 variants."]
+    },
+    {
+      "id": "SECRETENVELOPE-DEC-010",
+      "authoritative_sources": ["aws-kms-verify-source"],
+      "executable_evidence": ["TestSignatureVerifierAcceptsExactRequestLimits", "TestSignatureVerifierClassifiesFailuresWithoutRenderingCauses", "TestSignatureVerifierRejectsInvalidConstructionAndRequests"],
+      "fixtures": [],
+      "fuzz": [],
+      "differential_evidence": [],
+      "differential_classification": "not assessed",
+      "public_behavior": ["Verify rejects invalid or oversized requests and requires an exact successful provider response."]
+    }
+  ]
+}

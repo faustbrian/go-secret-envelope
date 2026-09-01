@@ -1,0 +1,18 @@
+id	version	url	sha256	status
+nist-sp800-38d-source	NIST SP 800-38D November 2007	https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf	d99f3921ccebca049e7522426553aba071dae14ec3d5b6041e8c111a6cb57bba	pinned
+nist-sp800-38d-releases	reviewed 2026-08-30	https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf	d99f3921ccebca049e7522426553aba071dae14ec3d5b6041e8c111a6cb57bba	pinned
+fips197-source	FIPS 197 updated May 9 2023	https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.197-upd1.pdf	62c86eb567f13edb8f71826e985da870b04ef6381634f303cdb16e84d47becd1	pinned
+fips197-releases	reviewed 2026-08-30	https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.197-upd1.pdf	62c86eb567f13edb8f71826e985da870b04ef6381634f303cdb16e84d47becd1	pinned
+aws-kms-generate-source	service/kms v1.55.0 commit 4fef3455fe2dcb5ea3de4e9fbacf889b84c8a255	https://raw.githubusercontent.com/aws/aws-sdk-go-v2/4fef3455fe2dcb5ea3de4e9fbacf889b84c8a255/service/kms/api_op_GenerateDataKey.go	b165cc5f37bf61ab022fc35b066b09fe6b01504ba8c470bac86795c4370f9510	pinned
+aws-kms-decrypt-source	service/kms v1.55.0 commit 4fef3455fe2dcb5ea3de4e9fbacf889b84c8a255	https://raw.githubusercontent.com/aws/aws-sdk-go-v2/4fef3455fe2dcb5ea3de4e9fbacf889b84c8a255/service/kms/api_op_Decrypt.go	9bd9d5a826f572c3b87580f85ed3a2af1882a52f9373ae4e9716a09afac71a1e	pinned
+aws-kms-verify-source	service/kms v1.55.0 commit 4fef3455fe2dcb5ea3de4e9fbacf889b84c8a255	https://raw.githubusercontent.com/aws/aws-sdk-go-v2/4fef3455fe2dcb5ea3de4e9fbacf889b84c8a255/service/kms/api_op_Verify.go	fef5c4338aea512851e41f5cdd2ac80d63c4fd9bbcd17a471578fca48281583d	pinned
+aws-kms-enums-source	service/kms v1.55.0 commit 4fef3455fe2dcb5ea3de4e9fbacf889b84c8a255	https://raw.githubusercontent.com/aws/aws-sdk-go-v2/4fef3455fe2dcb5ea3de4e9fbacf889b84c8a255/service/kms/types/enums.go	76178571890509f163429615c6396db5f65f78959648557a32b9c4e0ce2916f5	pinned
+aws-kms-releases	service/kms main path feed reviewed 2026-08-30	https://github.com/aws/aws-sdk-go-v2/commits/main/service/kms.atom	352c656625a78ce7bf13ece03929335c3d20e489b5e8004476f4da5139d1881d	pinned
+rfc8017-source	RFC 8017 November 2016	https://www.rfc-editor.org/rfc/rfc8017.txt	1e72dc473d18df3fc5598cdc12795a9f18f36f1aef15abc23a55eb0d58151d11	pinned
+rfc8017-errata	reviewed 2026-08-30	https://errata.rfc-editor.org/search/?rfc_number=8017&presentation=records	928c65234e7c1ec6689b99d3ede47a730841a9ea5fa08e59b640c7cbabb3b82f	pinned
+fips186-5-source	FIPS 186-5 February 3 2023	https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-5.pdf	fbb9c7c2ba442f03c57b63b43c888311903c9d0f29f89b06efdebd9b619140c5	pinned
+fips186-5-releases	reviewed 2026-08-30	https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-5.pdf	fbb9c7c2ba442f03c57b63b43c888311903c9d0f29f89b06efdebd9b619140c5	pinned
+rfc8032-source	RFC 8032 January 2017	https://www.rfc-editor.org/rfc/rfc8032.txt	ed63657ff389301282b169b0abde9b5dd2c7e4d524fdfa5da6ff3094fc93c4c3	pinned
+rfc8032-errata	reviewed 2026-08-30	https://errata.rfc-editor.org/search/?rfc_number=8032&presentation=records	2588c3c21031bb27340ee96002b1bf582ee2b331cae26c479e8a9b8dbf39b70d	pinned
+fips180-4-source	FIPS 180-4 August 2015	https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf	0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82	pinned
+fips180-4-releases	reviewed 2026-08-30	https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf	0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82	pinned

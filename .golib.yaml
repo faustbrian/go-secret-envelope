@@ -1,6 +1,6 @@
 schema_version: 1
-tool_version: v1.0.14
-tool_checksums_sha256: 88341d2f2904925b22ec8de084fec68c5229669f1119f066ed5fccd76aee2f82
+tool_version: v1.2.0
+tool_checksums_sha256: 7de6de3a14184eced8c0114bf802cb24a808f3e1592d358f6f6f3d02552d0e27
 
 manifest:
   modules: modules.json
@@ -21,14 +21,39 @@ api:
     - module: .
       mode: go-doc
       path: api/baseline.txt
-      packages: [".", "./adapters/awskms", "./adapters/keyring"]
+      packages:
+        - .
+        - ./adapters/awskms
+        - ./adapters/keyring
 
 operations:
+  - module: .
+    gate: conformance
+    steps:
+      - type: go-test
+        packages: [./...]
+        run: '^(TestServiceEncryptsAndDecryptsAnAuthenticatedEnvelope|TestServiceRejectsAContextSwap|TestContextIsCanonicalAndImmutable|TestEnvelopeParsingRejectsMalformedOrOversizedInput|TestEnvelopeAcceptsExactSizeLimits|TestServiceRejectsInvalidKeyMaterialAndEntropy|TestProviderGeneratesAnAES256DataKey|TestProviderDecryptsWithTheExactKeyAndContext|TestProviderRejectsMalformedResponsesWithoutRenderingClientErrors|TestProviderRejectsInvalidGenerateResponsesAndZeroizesKeys|TestProviderRejectsDecryptFailuresAndMalformedResponses|TestSignatureVerifierAuthenticatesExactRawMessage|TestSignatureVerifierAcceptsExactRequestLimits|TestSignatureVerifierRejectsInvalidConstructionAndRequests|TestSignatureVerifierClassifiesFailuresWithoutRenderingCauses|TestSignatureVerifierAcceptsReviewedRawAlgorithms|TestProviderWrapsAndUnwrapsDataKeysByReferenceAndContext|TestProviderAcceptsDocumentedKeyringBounds|TestProviderRejectsEntropyFailures|TestProviderAuthenticatesReferenceContextAndCiphertext|TestProviderUsesExactBoundedWireAllocations)$'
+        count: 1
+        timeout: 10m
+  - module: .
+    gate: docs
+    steps:
+      - type: make
+        makefile: verification/package.mk
+        target: docs
+        timeout: 20m
+  - module: .
+    gate: test
+    steps:
+      - type: make
+        makefile: verification/package.mk
+        target: safety
+        timeout: 20m
   - module: .
     gate: fuzz
     steps:
       - type: go-test
-        packages: ["."]
+        packages: [.]
         fuzz: '^FuzzParseEnvelope$'
         budget: 2s
         timeout: 2m
@@ -36,7 +61,7 @@ operations:
     gate: benchmark
     steps:
       - type: go-test
-        packages: ["./..."]
-        benchmark: "."
+        packages: [.]
+        benchmark: .
         budget: 100ms
         timeout: 20m

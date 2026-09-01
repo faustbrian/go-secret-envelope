@@ -2,18 +2,23 @@
 
 ## Getting started
 
-- [API and persistence](api.md)
-- [Architecture](architecture.md)
+- [API](api.md)
 
-## Security and operations
+## Concepts and design
+
+- [Architecture](architecture.md)
+- [Aws Kms](aws-kms.md)
+- [Keyring](keyring.md)
+
+## Operations and security
 
 - [Security](security.md)
-- [Versioned keyrings](keyring.md)
-- [AWS KMS operations](aws-kms.md)
 
-## Compatibility and maintenance
+## Reference and maintenance
 
 - [Compatibility](compatibility.md)
+
+## Contributing
+
 - [Contribution guide](../CONTRIBUTING.md)
-- [Support](../SUPPORT.md)
 - [Release history](../CHANGELOG.md)

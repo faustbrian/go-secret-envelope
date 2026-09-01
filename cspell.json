@@ -118,6 +118,7 @@
     "Repr",
     "SARIF",
     "SASL",
+    "SECRETENVELOPE",
     "SPKI",
     "SQLSTATE",
     "SRID",

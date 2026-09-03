@@ -6,11 +6,11 @@ All notable changes follow Keep a Changelog and semantic versioning.
 
 ### Changed
 
-- Adopt the `go-library-tools` v1.3.0 schema-v2 cohesion contract and local
-  `make cohesion` gate without changing secret-envelope API or runtime
-  behavior.
-- Pin reusable CI to the v1.3.0 workflow and enforce cohesion metadata in the
-  repository's required CI contract.
+- Adopt the checksum-verified `go-library-tools` v1.4.0 CLI, schema-v2
+  cohesion contract, and repository-local cohesion and online specification
+  gates without changing secret-envelope API or runtime behavior.
+- Pin reusable CI to the immutable v1.4.0 W14-enforcement workflow while
+  retaining the fail-closed required CI contract.
 
 - Govern the externally attributable AES-GCM and AWS KMS contracts separately
   from the repository-owned envelope, context, keyring, and defensive policies
@@ -26,7 +26,7 @@ All notable changes follow Keep a Changelog and semantic versioning.
   selected KMS source bindings or adapter contract.
 - Publish the module's family, capabilities, ownership, lifecycle, supported
   environments, package selection, and delivery status, and link the README to
-  the immutable v1.3.0 ecosystem index and family guidance.
+  the immutable v1.4.0 ecosystem index and family guidance.
 
 - Record the initial specification decisions and their immutable content pins:
   - SECRETENVELOPE-DEC-001 sha256:47e0973213358b254b7ca58296233b6779fcecdb761cf975c612d7492ae2b499
@@ -88,5 +88,3 @@ All notable changes follow Keep a Changelog and semantic versioning.
   boundaries, including minimum and maximum valid envelope encodings.
 - Documented rotation and custody requirements for externally delivered
   keyrings without introducing a cloud runtime dependency.
-
-No release has been published.

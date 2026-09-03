@@ -13,6 +13,20 @@ and cannot serve as reproducible content pins. The 90-day review remains
 responsible for checking supersession; the online gate detects in-place changes
 to the official publication artifacts.
 
+## Upstream review history
+
+### 2026-09-03
+
+- AWS SDK for Go v2 KMS advanced from service/kms v1.55.0 commit
+  `4fef3455fe2dcb5ea3de4e9fbacf889b84c8a255` to v1.58.0 commit
+  `5a5ee7a736838df1cb7c39f2b3f5d78bed226463`. The reviewed operation-file
+  changes move generated transport middleware without changing the request and
+  response fields, validation, raw-message bound, or algorithm semantics used
+  by the four KMS decisions; the enum source remains byte-identical. The change
+  is behavior-neutral for the repository's fixed request, identity, allowlist,
+  response-matching, and bounds contracts, so the pinned v1.55.0 source
+  bindings remain selected.
+
 | Decision | Sources | Executable evidence | Other evidence |
 | --- | --- | --- | --- |
 | SECRETENVELOPE-DEC-001 | `nist-sp800-38d-source`, `fips197-source` | `TestServiceEncryptsAndDecryptsAnAuthenticatedEnvelope`, `TestProviderWrapsAndUnwrapsDataKeysByReferenceAndContext` | Not assessed |

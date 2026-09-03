@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "reviewed_at": "2026-08-30",
+  "reviewed_at": "2026-09-03",
   "review_interval_days": 90,
   "authorities": [
     {
@@ -70,9 +70,9 @@
     {
       "id": "aws-kms-releases",
       "kind": "releases",
-      "version": "service/kms main path feed reviewed 2026-08-30",
+      "version": "service/kms main path feed reviewed 2026-09-03",
       "url": "https://github.com/aws/aws-sdk-go-v2/commits/main/service/kms.atom",
-      "sha256": "352c656625a78ce7bf13ece03929335c3d20e489b5e8004476f4da5139d1881d",
+      "sha256": "ea5171d8c0f77bfaab703bc4148f62c0d2392c8dff539c4890be059635cc0748",
       "specifications": ["AWS KMS SDK Go v2 service/kms v1.55.0"]
     },
     {

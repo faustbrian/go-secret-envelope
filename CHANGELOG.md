@@ -21,6 +21,9 @@ All notable changes follow Keep a Changelog and semantic versioning.
 
 ### Documentation
 
+- Record the behavior-neutral review of AWS SDK for Go v2 KMS v1.55.0 through
+  v1.58.0 and refresh the monitored release-feed digest without changing the
+  selected KMS source bindings or adapter contract.
 - Publish the module's family, capabilities, ownership, lifecycle, supported
   environments, package selection, and delivery status, and link the README to
   the immutable v1.3.0 ecosystem index and family guidance.

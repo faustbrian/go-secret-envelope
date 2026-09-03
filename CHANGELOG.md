@@ -6,6 +6,12 @@ All notable changes follow Keep a Changelog and semantic versioning.
 
 ### Changed
 
+- Adopt the `go-library-tools` v1.3.0 schema-v2 cohesion contract and local
+  `make cohesion` gate without changing secret-envelope API or runtime
+  behavior.
+- Pin reusable CI to the v1.3.0 workflow and enforce cohesion metadata in the
+  repository's required CI contract.
+
 - Govern the externally attributable AES-GCM and AWS KMS contracts separately
   from the repository-owned envelope, context, keyring, and defensive policies
   in the [specification decision register](docs/specification-decisions.md).
@@ -14,6 +20,13 @@ All notable changes follow Keep a Changelog and semantic versioning.
   package-owned policy and verification evidence.
 
 ### Documentation
+
+- Record the behavior-neutral review of AWS SDK for Go v2 KMS v1.55.0 through
+  v1.58.0 and refresh the monitored release-feed digest without changing the
+  selected KMS source bindings or adapter contract.
+- Publish the module's family, capabilities, ownership, lifecycle, supported
+  environments, package selection, and delivery status, and link the README to
+  the immutable v1.3.0 ecosystem index and family guidance.
 
 - Record the initial specification decisions and their immutable content pins:
   - SECRETENVELOPE-DEC-001 sha256:47e0973213358b254b7ca58296233b6779fcecdb761cf975c612d7492ae2b499

@@ -132,6 +132,10 @@ if err := verifier.Verify(
 - [Compatibility](docs/compatibility.md)
 - [Specification decisions](docs/specification-decisions.md)
 
+For ecosystem-wide selection and ownership guidance, see the versioned
+[Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.3.0/docs/ecosystem/README.md)
+and its [Integration and data movement family](https://github.com/faustbrian/go-library-tools/blob/v1.3.0/docs/ecosystem/design-language.md#package-families-and-selection).
+
 ## License
 
 MIT.

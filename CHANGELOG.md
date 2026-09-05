@@ -30,8 +30,8 @@ All notable changes follow Keep a Changelog and semantic versioning.
 - Remove the unsubstantiated `go-config` companion relationship and `New(Config)`
   construction classification from Cohesion metadata without changing
   dependencies or runtime behavior.
-- Record the behavior-neutral review of AWS SDK for Go v2 KMS v1.55.0 through
-  v1.58.0 and refresh the monitored release-feed digest without changing the
+- Record the behavior-neutral reviews of AWS SDK for Go v2 KMS v1.55.0 through
+  v1.59.0 and refresh the monitored release-feed digest without changing the
   selected KMS source bindings or adapter contract.
 - Publish the module's family, capabilities, ownership, lifecycle, supported
   environments, package selection, and delivery status, and link the README to

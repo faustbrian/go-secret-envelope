@@ -15,6 +15,21 @@ to the official publication artifacts.
 
 ## Upstream review history
 
+### 2026-09-05
+
+- The AWS SDK for Go v2 KMS path feed added the v1.59.0 release commit
+  `afdc89fb3e9277f2c13acbdbe088c8c32aab38f9` and its
+  `08c63d9df4a4327e0c8f79346e42acd04eece2c2` tracing-middleware change, while
+  its rolling window removed the `e022bf511ea59ead5f366e513e61ab1d4c913b35`
+  2026-07-31.2 release and
+  `5555cc0a2e694fbe77563e7b35159d3d2ee3022c` smithy-go v1.27.6 update.
+  The GenerateDataKey, Decrypt, Verify, and enum sources are byte-identical
+  between v1.58.0 and v1.59.0. The only KMS source change removes the generated
+  client's retry-loop span registration because the central retry middleware
+  now owns that span. It changes neither the selected requests, responses,
+  validation, bounds, nor algorithms, so the repository retains its reviewed
+  v1.55.0 source bindings.
+
 ### 2026-09-03
 
 - AWS SDK for Go v2 KMS advanced from service/kms v1.55.0 commit

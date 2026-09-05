@@ -45,7 +45,7 @@
           "build_tags": []
         }
       ],
-      "purpose": "`secret-envelope` encrypts application-owned secret payloads with one-use AES-256-GCM data keys and delegates key wrapping to an explicit provider. The provider-neutral keyring adapter wraps those keys with versioned AES-256 keys delivered through an application's secret-management boundary. The optional AWS KMS adapter uses `GenerateDataKey` and `Decrypt` and also exposes a verify-only asymmetric KMS boundary for bounded externally signed raw statements. Plaintext data keys are best-effort zeroized after each operation.",
+      "purpose": "`secret-envelope` encrypts application-owned secret payloads with one-use AES-256-GCM data keys and delegates key wrapping to an explicit provider. The provider-neutral keyring adapter wraps those keys with versioned AES-256 keys delivered through an application's secret-management boundary. The optional AWS KMS adapter uses `GenerateDataKey` and `Decrypt` and also exposes a verify-only asymmetric KMS boundary for bounded externally signed raw statements. During `Service` operations, transferred plaintext data keys are best-effort zeroized before the call returns.",
       "lifecycle": "stable",
       "kind": "public library",
       "releasable": true,
@@ -109,7 +109,6 @@
         "maturity": "stable",
         "construction_styles": [
           "functional-options",
-          "new-config",
           "validated-value"
         ],
         "lifecycle_styles": [
@@ -130,9 +129,7 @@
           "github.com/faustbrian/go-secret-envelope/adapters/awskms",
           "github.com/faustbrian/go-secret-envelope/adapters/keyring"
         ],
-        "companions": [
-          "github.com/faustbrian/go-config"
-        ],
+        "companions": [],
         "supported_go": {
           "minimum": "1.26.6",
           "tested": [
@@ -160,12 +157,12 @@
           "adoption": "README.md",
           "security": "docs/security.md",
           "compatibility": "docs/compatibility.md",
-          "performance": null,
-          "examples": "README.md",
-          "faq": null,
+          "performance": "docs/performance.md",
+          "examples": "example_test.go",
+          "faq": "docs/faq.md",
           "changelog": "CHANGELOG.md",
           "pkg_go_dev": "https://pkg.go.dev/github.com/faustbrian/go-secret-envelope",
-          "ecosystem_index": "https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/README.md"
+          "ecosystem_index": "https://github.com/faustbrian/go-library-tools/blob/v1.5.3/docs/ecosystem/README.md"
         },
         "known_good_compatibility_sets": [],
         "delivery": {

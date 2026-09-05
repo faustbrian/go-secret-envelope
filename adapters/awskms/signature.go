@@ -47,7 +47,8 @@ var (
 )
 
 // SignatureClient is the least-privilege AWS KMS surface used to authenticate
-// an externally signed statement.
+// an externally signed statement. SignatureVerifier borrows the client and
+// inherits its concurrency guarantees.
 type SignatureClient interface {
 	Verify(
 		context.Context,
@@ -57,7 +58,8 @@ type SignatureClient interface {
 }
 
 // SignatureVerifier authenticates bounded raw messages with one explicitly
-// reviewed asymmetric KMS signing algorithm. It never signs messages.
+// reviewed asymmetric KMS signing algorithm. It never signs messages and owns
+// no client resources or background work.
 type SignatureVerifier struct {
 	client    SignatureClient
 	algorithm types.SigningAlgorithmSpec

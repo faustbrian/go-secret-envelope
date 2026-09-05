@@ -21,6 +21,15 @@ All notable changes follow Keep a Changelog and semantic versioning.
 
 ### Documentation
 
+- Complete installation, package-selection, ownership, lifecycle, concurrency,
+  cancellation, error, troubleshooting, performance, platform, and operational
+  guidance; add a compiler-checked keyring example; and link the canonical
+  v1.5.3 ecosystem index.
+- Correct the v1.0.0 date to 2026-08-26, matching the signed annotated tag and
+  [published GitHub release](https://github.com/faustbrian/go-secret-envelope/releases/tag/v1.0.0).
+- Remove the unsubstantiated `go-config` companion relationship and `New(Config)`
+  construction classification from Cohesion metadata without changing
+  dependencies or runtime behavior.
 - Record the behavior-neutral review of AWS SDK for Go v2 KMS v1.55.0 through
   v1.58.0 and refresh the monitored release-feed digest without changing the
   selected KMS source bindings or adapter contract.
@@ -42,7 +51,7 @@ All notable changes follow Keep a Changelog and semantic versioning.
 - Replace archived monorepo links and completed execution artifacts with a
   standalone, human-oriented documentation structure.
 
-## 1.0.0 - 2026-08-25
+## 1.0.0 - 2026-08-26
 
 ### Changed
 

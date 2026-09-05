@@ -22,6 +22,11 @@ The adapter does not silently fall back to another key. Missing references,
 changed context, changed wrapping keys, malformed ciphertext, and tampering
 fail closed.
 
+The provider is safe for concurrent use. Each call observes caller
+cancellation before starting its bounded local cryptographic work; encryption
+and decryption do not poll the context after that work begins. The provider
+starts no goroutines or timers and requires no shutdown.
+
 ## Custody
 
 Keyring material remains in process memory for the provider lifetime and must

@@ -18,7 +18,10 @@ var (
 	ErrInvalidResponse = errors.New("AWS KMS data-key response is invalid")
 )
 
-// Client is the least-privilege AWS KMS surface used by Provider.
+// Client is the least-privilege AWS KMS surface used by Provider. A Provider
+// borrows its client and inherits the client's concurrency guarantees. When a
+// client method returns an error, the client retains responsibility for any
+// response and secret bytes; Provider does not inspect error responses.
 type Client interface {
 	GenerateDataKey(
 		context.Context,
@@ -32,7 +35,8 @@ type Client interface {
 	) (*kms.DecryptOutput, error)
 }
 
-// Provider wraps one-use AES-256 data keys with a symmetric KMS key.
+// Provider wraps one-use AES-256 data keys with a symmetric KMS key. It owns no
+// client resources or background work.
 type Provider struct {
 	client Client
 }

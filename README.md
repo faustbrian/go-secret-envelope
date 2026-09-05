@@ -16,7 +16,28 @@ provider-neutral keyring adapter wraps those keys with versioned AES-256 keys
 delivered through an application's secret-management boundary. The optional
 AWS KMS adapter uses `GenerateDataKey` and `Decrypt` and also exposes a
 verify-only asymmetric KMS boundary for bounded externally signed raw
-statements. Plaintext data keys are best-effort zeroized after each operation.
+statements. During `Service` operations, transferred plaintext data keys are
+best-effort zeroized before the call returns.
+
+The module is active and stable at v1. It requires Go 1.26.6.
+
+## Install
+
+```sh
+go get github.com/faustbrian/go-secret-envelope@v1.0.0
+```
+
+The root v1 module currently contains all three public packages:
+
+| Package | Select it when |
+| --- | --- |
+| `github.com/faustbrian/go-secret-envelope` | You need the envelope format, authenticated context, and `KeyProvider` contract. |
+| `github.com/faustbrian/go-secret-envelope/adapters/keyring` | Wrapping keys are delivered to the process by an approved secret manager. |
+| `github.com/faustbrian/go-secret-envelope/adapters/awskms` | AWS KMS generates and unwraps data keys or verifies externally signed statements. |
+
+Because the AWS KMS adapter was released inside the root module, installing the
+root currently includes the AWS SDK dependencies even when an application uses
+only the provider-neutral package or keyring adapter.
 
 ## Boundary
 
@@ -111,30 +132,48 @@ if err := verifier.Verify(
 
 ## Guarantees
 
-- AES-256-GCM with fresh 96-bit nonces from `crypto/rand`.
-- A fresh KMS data key for every encrypted payload.
+- AES-256-GCM with fresh 96-bit nonces from `crypto/rand` by default. The
+  `WithNonceReader` test seam transfers nonce uniqueness to the supplied reader.
+- A fresh data key for every encrypted payload produced by the bundled keyring
+  and AWS KMS providers. Custom `KeyProvider` implementations own that policy.
 - Stable, bounded, versioned binary persistence format.
 - Immutable contexts and envelopes with caller-owned byte copies.
 - Redacted text, JSON, and `slog` representations.
 - Plaintext payloads bounded to 4 MiB, with bounded wrapped keys, contexts, and
   envelopes.
-- Redacted errors that retain `errors.Is` cause traversal.
+- Secret-safe `Error()` text and `%v`/`%+v` formatting that retain `errors.Is`
+  cause traversal. Avoid Go-syntax `%#v` formatting of concrete errors because
+  it can expose wrapped provider causes.
 - Verify-only KMS authentication for raw messages up to 4096 bytes with
   explicit PSS, ECDSA, or Ed25519 algorithms.
 
+## Cancellation boundary
+
+Caller cancellation is observed by providers at their documented boundaries.
+After a provider returns successfully, cancellation cannot interrupt the
+service's nonce read or bounded local AES-GCM work. Use only the default entropy
+source in production; an injected nonce reader is a deterministic-test seam and
+must return promptly.
+
 ## Documentation
 
+- [Compiler-checked quick start](example_test.go)
 - [API and persistence](docs/api.md)
 - [Architecture](docs/architecture.md)
 - [Security](docs/security.md)
 - [Versioned keyrings](docs/keyring.md)
 - [AWS KMS operations](docs/aws-kms.md)
 - [Compatibility](docs/compatibility.md)
+- [Performance](docs/performance.md)
+- [FAQ and troubleshooting](docs/faq.md)
 - [Specification decisions](docs/specification-decisions.md)
+- [Support](SUPPORT.md)
+- [Contributing and verification](CONTRIBUTING.md)
+- [Release history](CHANGELOG.md)
 
 For ecosystem-wide selection and ownership guidance, see the versioned
-[Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/README.md)
-and its [Integration and data movement family](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/design-language.md#package-families-and-selection).
+[Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.5.3/docs/ecosystem/README.md)
+and its [Integration and data movement family](https://github.com/faustbrian/go-library-tools/blob/v1.5.3/docs/ecosystem/design-language.md#package-families-and-selection).
 
 ## License
 

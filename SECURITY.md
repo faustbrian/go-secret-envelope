@@ -1,8 +1,9 @@
 # Security policy
 
-Report vulnerabilities through the repository's private vulnerability
-reporting channel. Do not include production ciphertext, plaintext, keys,
-credentials, customer data, or KMS identifiers that reveal private topology.
+Report vulnerabilities through a
+[private GitHub security advisory](https://github.com/faustbrian/go-secret-envelope/security/advisories/new).
+Do not include production ciphertext, plaintext, keys, credentials, customer
+data, or KMS identifiers that reveal private topology.
 
 The module protects local authenticated encryption, persistence framing,
 context binding, key-provider adaptation, bounds, and diagnostic redaction. It

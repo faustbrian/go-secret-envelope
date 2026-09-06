@@ -4,6 +4,11 @@ All notable changes follow Keep a Changelog and semantic versioning.
 
 ## Unreleased
 
+### Security
+
+- Provide direct private vulnerability-reporting and public support routes,
+  with GitHub Discussions enabled for adoption questions.
+
 ### Changed
 
 - Adopt the checksum-verified `go-library-tools` v1.4.0 CLI, schema-v2

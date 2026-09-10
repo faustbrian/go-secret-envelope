@@ -7,7 +7,7 @@
 [![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
 [![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-secret-envelope.svg)](https://pkg.go.dev/github.com/faustbrian/go-secret-envelope)
 [![Release](https://img.shields.io/github/v/release/faustbrian/go-secret-envelope?sort=semver)](https://github.com/faustbrian/go-secret-envelope/releases)
-[![Go](https://img.shields.io/badge/go-1.26.6-00ADD8?logo=go)](https://go.dev/)
+[![Go](https://img.shields.io/badge/go-1.27.0-00ADD8?logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 `secret-envelope` encrypts application-owned secret payloads with one-use
@@ -19,7 +19,7 @@ verify-only asymmetric KMS boundary for bounded externally signed raw
 statements. During `Service` operations, transferred plaintext data keys are
 best-effort zeroized before the call returns.
 
-The module is active and stable at v1. It requires Go 1.26.6.
+The module is active and stable at v1. It requires Go 1.27.0.
 
 ## Install
 

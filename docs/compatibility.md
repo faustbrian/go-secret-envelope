@@ -1,6 +1,6 @@
 # Compatibility
 
-The module requires Go 1.26.6. Public API and binary persistence changes follow
+The module requires Go 1.27.0. Public API and binary persistence changes follow
 semantic versioning after the first release.
 
 The root and keyring packages use portable Go source without cgo, native

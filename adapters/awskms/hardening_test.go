@@ -5,13 +5,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/kms/types"
-	secretenvelope "github.com/faustbrian/go-secret-envelope"
+	secretenvelope "github.com/faustbrian/go-secret-envelope/v2"
 )
 
 func TestProviderRejectsNilClientsAndReceivers(t *testing.T) {
@@ -128,6 +129,91 @@ func TestProviderRejectsInvalidRequests(t *testing.T) {
 				t.Fatalf("operation error = %v, want ErrInvalidRequest", err)
 			}
 		})
+	}
+}
+
+func TestProviderRejectsOversizedRequestsBeforeKMS(t *testing.T) {
+	if os.Getenv("GITHUB_ACTIONS") != "true" {
+		t.Skip("KMS admission regression runs in hosted CI")
+	}
+	t.Parallel()
+
+	const (
+		maximumKeyReferenceBytes   = 2_048
+		maximumCiphertextBlobBytes = 6_144
+	)
+	encryptionContext, _ := secretenvelope.NewContext(
+		map[string]string{"service": "location"},
+	)
+	for name, test := range map[string]struct {
+		keyReference string
+		ciphertext   []byte
+		decrypt      bool
+	}{
+		"generate-key-reference": {
+			keyReference: strings.Repeat("k", maximumKeyReferenceBytes+1),
+		},
+		"decrypt-key-reference": {
+			keyReference: strings.Repeat("k", maximumKeyReferenceBytes+1),
+			ciphertext:   []byte("wrapped"),
+			decrypt:      true,
+		},
+		"decrypt-ciphertext": {
+			keyReference: "alias/location",
+			ciphertext:   bytes.Repeat([]byte{0x42}, maximumCiphertextBlobBytes+1),
+			decrypt:      true,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			client := &recordingClient{}
+			provider, _ := New(client)
+			var err error
+			if test.decrypt {
+				_, err = provider.DecryptDataKey(
+					context.Background(),
+					test.keyReference,
+					test.ciphertext,
+					encryptionContext,
+				)
+			} else {
+				_, err = provider.GenerateDataKey(
+					context.Background(),
+					test.keyReference,
+					encryptionContext,
+				)
+			}
+			if !errors.Is(err, ErrInvalidRequest) {
+				t.Fatalf("operation error = %v, want ErrInvalidRequest", err)
+			}
+			if client.generateInput != nil || client.decryptInput != nil {
+				t.Fatal("oversized request reached KMS client")
+			}
+		})
+	}
+
+	generateClient := &recordingClient{}
+	provider, _ := New(generateClient)
+	_, generateErr := provider.GenerateDataKey(
+		context.Background(),
+		strings.Repeat("k", maximumKeyReferenceBytes),
+		encryptionContext,
+	)
+	if !errors.Is(generateErr, ErrInvalidResponse) || generateClient.generateInput == nil {
+		t.Fatalf("exact-limit GenerateDataKey() error = %v", generateErr)
+	}
+
+	decryptClient := &recordingClient{}
+	provider, _ = New(decryptClient)
+	_, decryptErr := provider.DecryptDataKey(
+		context.Background(),
+		strings.Repeat("k", maximumKeyReferenceBytes),
+		bytes.Repeat([]byte{0x42}, maximumCiphertextBlobBytes),
+		encryptionContext,
+	)
+	if !errors.Is(decryptErr, ErrInvalidResponse) || decryptClient.decryptInput == nil {
+		t.Fatalf("exact-limit DecryptDataKey() error = %v", decryptErr)
 	}
 }
 
@@ -253,22 +339,127 @@ func TestProviderRejectsDecryptFailuresAndMalformedResponses(t *testing.T) {
 	}
 }
 
-func TestOperationErrorPreservesCauseWithoutRenderingIt(t *testing.T) {
+func TestOperationErrorDoesNotExposeCause(t *testing.T) {
+	if os.Getenv("GITHUB_ACTIONS") != "true" {
+		t.Skip("provider error contract runs in hosted CI")
+	}
 	t.Parallel()
 
 	cause := errors.New("sensitive-cause")
-	err := operationError{
-		operation: "test",
-		kind:      ErrKMS,
-		cause:     cause,
+	encryptionContext, _ := secretenvelope.NewContext(
+		map[string]string{"service": "location"},
+	)
+	for name, test := range map[string]struct {
+		client    *recordingClient
+		operation func(*Provider) error
+		wantText  string
+	}{
+		"generate": {
+			client: &recordingClient{generateErr: cause},
+			operation: func(provider *Provider) error {
+				_, err := provider.GenerateDataKey(
+					context.Background(), "alias/location", encryptionContext,
+				)
+
+				return err
+			},
+			wantText: "AWS KMS generate data key failed",
+		},
+		"decrypt": {
+			client: &recordingClient{decryptErr: cause},
+			operation: func(provider *Provider) error {
+				_, err := provider.DecryptDataKey(
+					context.Background(), "alias/location", []byte("wrapped"),
+					encryptionContext,
+				)
+
+				return err
+			},
+			wantText: "AWS KMS decrypt data key failed",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			provider, _ := New(test.client)
+			err := test.operation(provider)
+			if !errors.Is(err, ErrKMS) || errors.Is(err, cause) ||
+				err.Error() != test.wantText {
+				t.Fatalf("operation error = %v", err)
+			}
+			if rendered := fmt.Sprintf("%v %#v", err, err); strings.Contains(rendered, cause.Error()) {
+				t.Fatal("formatted operation error exposed its cause")
+			}
+		})
 	}
-	if !errors.Is(err, ErrKMS) ||
-		!errors.Is(err, cause) ||
-		err.Error() != "AWS KMS test data key failed" {
-		t.Fatalf("operation error = %v", err)
+}
+
+func TestOperationErrorPreservesOnlySafeCancellation(t *testing.T) {
+	if os.Getenv("GITHUB_ACTIONS") != "true" {
+		t.Skip("provider cancellation contract runs in hosted CI")
 	}
-	if fmt.Sprintf("%v", err) != err.Error() {
-		t.Fatal("formatted operation error changed")
+	t.Parallel()
+
+	encryptionContext, _ := secretenvelope.NewContext(
+		map[string]string{"service": "location"},
+	)
+	for name, test := range map[string]struct {
+		cause     error
+		operation func(*Provider) error
+	}{
+		"generate-canceled": {
+			cause: context.Canceled,
+			operation: func(provider *Provider) error {
+				_, err := provider.GenerateDataKey(
+					context.Background(), "alias/location", encryptionContext,
+				)
+
+				return err
+			},
+		},
+		"generate-deadline": {
+			cause: context.DeadlineExceeded,
+			operation: func(provider *Provider) error {
+				_, err := provider.GenerateDataKey(
+					context.Background(), "alias/location", encryptionContext,
+				)
+
+				return err
+			},
+		},
+		"decrypt-canceled": {
+			cause: context.Canceled,
+			operation: func(provider *Provider) error {
+				_, err := provider.DecryptDataKey(
+					context.Background(), "alias/location", []byte("wrapped"),
+					encryptionContext,
+				)
+
+				return err
+			},
+		},
+		"decrypt-deadline": {
+			cause: context.DeadlineExceeded,
+			operation: func(provider *Provider) error {
+				_, err := provider.DecryptDataKey(
+					context.Background(), "alias/location", []byte("wrapped"),
+					encryptionContext,
+				)
+
+				return err
+			},
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			client := &recordingClient{generateErr: test.cause, decryptErr: test.cause}
+			provider, _ := New(client)
+			err := test.operation(provider)
+			if !errors.Is(err, ErrKMS) || !errors.Is(err, test.cause) {
+				t.Fatalf("operation error = %v, want KMS and cancellation categories", err)
+			}
+		})
 	}
 }
 

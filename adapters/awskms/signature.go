@@ -113,7 +113,10 @@ func (verifier *SignatureVerifier) Verify(
 			kind = ErrSignatureRejected
 		}
 
-		return signatureOperationError{kind: kind, cause: err}
+		return signatureOperationError{
+			kind:  kind,
+			cause: safeProviderCause(err),
+		}
 	}
 	if output == nil {
 		return ErrInvalidSignatureResponse
@@ -184,6 +187,10 @@ func (err signatureOperationError) Error() string {
 }
 
 func (err signatureOperationError) Unwrap() []error {
+	if err.cause == nil {
+		return []error{err.kind}
+	}
+
 	return []error{err.kind, err.cause}
 }
 

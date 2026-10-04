@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	"os"
 	"strings"
 	"testing"
 )
@@ -163,30 +165,112 @@ func TestServiceRejectsAContextSwap(t *testing.T) {
 }
 
 func TestServiceErrorsDoNotRenderSecretsOrProviderCauses(t *testing.T) {
+	if os.Getenv("GITHUB_ACTIONS") != "true" {
+		t.Skip("provider error contract runs in hosted CI")
+	}
 	t.Parallel()
 
 	const secret = "provider-secret-cause"
-	service, err := NewService(failingProvider{err: errors.New(secret)})
+	provider := failingProvider{err: errors.New(secret)}
+	service, err := NewService(provider)
 	if err != nil {
 		t.Fatalf("NewService() error = %v", err)
 	}
 	encryptionContext, _ := NewContext(map[string]string{"source_id": "source-a"})
 
-	_, err = service.Encrypt(context.Background(), EncryptRequest{
+	for name, operation := range map[string]func() error{
+		"encrypt": func() error {
+			_, callErr := service.Encrypt(context.Background(), EncryptRequest{
+				Plaintext:    []byte("plaintext-secret"),
+				KeyReference: "alias/location-contracts",
+				Context:      encryptionContext,
+			})
+
+			return callErr
+		},
+		"decrypt": func() error {
+			_, callErr := service.Decrypt(context.Background(), DecryptRequest{
+				Envelope: validTestEnvelope(),
+				Context:  encryptionContext,
+			})
+
+			return callErr
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			err := operation()
+			if err == nil {
+				t.Fatal("operation error = nil, want error")
+			}
+			rendered := fmt.Sprintf("%v %+v %#v", err, err, err)
+			if strings.Contains(rendered, secret) ||
+				strings.Contains(rendered, "plaintext-secret") {
+				t.Fatalf("error exposed secret material: %q", rendered)
+			}
+			if !errors.Is(err, ErrKeyProvider) {
+				t.Fatalf("operation error = %v, want ErrKeyProvider", err)
+			}
+			if errors.Is(err, provider.err) {
+				t.Fatal("operation error exposed the provider cause")
+			}
+		})
+	}
+}
+
+func TestServiceEntropyErrorsDoNotExposeCauses(t *testing.T) {
+	if os.Getenv("GITHUB_ACTIONS") != "true" {
+		t.Skip("entropy error contract runs in hosted CI")
+	}
+	t.Parallel()
+
+	const secret = "entropy-secret-cause"
+	provider := &recordingProvider{
+		plaintextKey: bytes.Repeat([]byte{0x42}, DataKeySize),
+		encryptedKey: []byte("wrapped"),
+		resolvedKey:  "alias/location-contracts",
+	}
+	cause := errors.New(secret)
+	service, _ := NewService(provider, WithNonceReader(errorReader{err: cause}))
+	encryptionContext, _ := NewContext(map[string]string{"source_id": "source-a"})
+	_, err := service.Encrypt(context.Background(), EncryptRequest{
 		Plaintext:    []byte("plaintext-secret"),
 		KeyReference: "alias/location-contracts",
 		Context:      encryptionContext,
 	})
-	if err == nil {
-		t.Fatal("Encrypt() error = nil, want error")
+	if !errors.Is(err, ErrEntropy) || errors.Is(err, cause) {
+		t.Fatalf("Encrypt() error = %v, want only ErrEntropy", err)
 	}
-	rendered := err.Error()
-	if strings.Contains(rendered, secret) ||
-		strings.Contains(rendered, "plaintext-secret") {
-		t.Fatalf("error exposed secret material: %q", rendered)
+	if rendered := fmt.Sprintf("%v %+v %#v", err, err, err); strings.Contains(rendered, secret) {
+		t.Fatalf("entropy error exposed its cause: %q", rendered)
 	}
-	if !errors.Is(err, ErrKeyProvider) {
-		t.Fatalf("Encrypt() error = %v, want ErrKeyProvider", err)
+}
+
+func TestServicePreservesOnlySafeProviderCancellation(t *testing.T) {
+	if os.Getenv("GITHUB_ACTIONS") != "true" {
+		t.Skip("provider cancellation contract runs in hosted CI")
+	}
+	t.Parallel()
+
+	encryptionContext, _ := NewContext(map[string]string{"source_id": "source-a"})
+	for name, cause := range map[string]error{
+		"canceled": context.Canceled,
+		"deadline": context.DeadlineExceeded,
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			service, _ := NewService(failingProvider{err: cause})
+			_, err := service.Encrypt(context.Background(), EncryptRequest{
+				Plaintext:    []byte("plaintext"),
+				KeyReference: "alias/location-contracts",
+				Context:      encryptionContext,
+			})
+			if !errors.Is(err, ErrKeyProvider) || !errors.Is(err, cause) {
+				t.Fatalf("Encrypt() error = %v, want provider and cancellation categories", err)
+			}
+		})
 	}
 }
 

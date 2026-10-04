@@ -20,7 +20,7 @@ statements. During `Service` operations, transferred plaintext data keys are
 best-effort zeroized before the call returns.
 
 Main prepares v2 and requires Go 1.27.0. The latest published release remains
-v1.0.0 on the unsuffixed import path until v2 qualification is complete.
+v1.0.0 on the import path without `/v2` until v2 qualification is complete.
 
 ## Install
 

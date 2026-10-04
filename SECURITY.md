@@ -15,6 +15,14 @@ crash dumps, insecure transport, incorrect authorization, excessive IAM
 permissions, malicious KMS administrators, or application logging of raw
 inputs.
 
+The versioned repository threat model, controls, and accepted-risk register are
+maintained in [docs/security.md](docs/security.md).
+
 Plaintext data-key zeroization is best effort under Go's memory model. Callers
 own plaintext payload lifecycle and must avoid retaining unnecessary copies.
 Encryption context is non-secret and can appear in AWS CloudTrail.
+
+Provider failures expose only stable package categories plus safe context
+cancellation or deadline identity. Underlying provider errors are discarded
+because they can contain credentials, key topology, request data, or other
+sensitive diagnostics.

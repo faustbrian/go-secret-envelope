@@ -16,7 +16,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	secretenvelope "github.com/faustbrian/go-secret-envelope"
+	secretenvelope "github.com/faustbrian/go-secret-envelope/v2"
 )
 
 const (

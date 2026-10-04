@@ -6,10 +6,19 @@ All notable changes follow Keep a Changelog and semantic versioning.
 
 ### Security
 
+- Bound direct AWS KMS key references and decrypt ciphertext blobs before
+  copying or provider I/O.
+- Discard provider-specific causes from root, KMS and signature errors while
+  preserving stable package and genuine cancellation/deadline categories.
+- Document the versioned threat model and owned residual-risk register.
 - Provide direct private vulnerability-reporting and public support routes,
   with GitHub Discussions enabled for adoption questions.
 
 ### Changed
+
+- Prepare v2 on main with the required `/v2` module/import suffix. Replace
+  provider-specific `errors.Is`/`errors.As` handling with package categories
+  and update imports; genuine context categories remain available.
 
 - Adopt the checksum-verified `go-library-tools` v1.4.0 CLI, schema-v2
   cohesion contract, and repository-local cohesion and online specification

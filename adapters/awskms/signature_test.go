@@ -285,9 +285,18 @@ func TestSignatureVerifierClassifiesFailuresWithoutRenderingCauses(
 		output *kms.VerifyOutput
 		err    error
 		want   error
+		safe   error
 	}{
 		"KMS failure": {
 			err: errors.New(secret), want: ErrKMSSignatureVerification,
+		},
+		"KMS cancellation": {
+			err: context.Canceled, want: ErrKMSSignatureVerification,
+			safe: context.Canceled,
+		},
+		"KMS deadline": {
+			err: context.DeadlineExceeded, want: ErrKMSSignatureVerification,
+			safe: context.DeadlineExceeded,
 		},
 		"invalid signature exception": {
 			err:  &types.KMSInvalidSignatureException{Message: aws.String(secret)},
@@ -339,6 +348,12 @@ func TestSignatureVerifierClassifiesFailuresWithoutRenderingCauses(
 			if !errors.Is(err, test.want) ||
 				strings.Contains(fmt.Sprintf("%v %#v", err, err), secret) {
 				t.Fatalf("Verify() error = %v, want %v", err, test.want)
+			}
+			if test.safe != nil && !errors.Is(err, test.safe) {
+				t.Fatal("Verify() error discarded safe cancellation identity")
+			}
+			if test.err != nil && test.safe == nil && errors.Is(err, test.err) {
+				t.Fatal("Verify() error exposed its provider cause")
 			}
 		})
 	}

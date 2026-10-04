@@ -27,6 +27,11 @@ If an injected client returns an error with a response, the client retains
 responsibility for that response and any secret bytes. The provider does not
 inspect error responses.
 
+Direct calls reject key references larger than 2048 bytes and decrypt
+ciphertext blobs larger than 6144 bytes before copying values or invoking the
+client. Provider failures retain stable package categories and safe context
+cancellation/deadline identity, but discard other underlying client causes.
+
 The adapter passes the caller context to the injected client. A KMS request is
 time-bounded only when that context or the client configuration supplies a
 deadline or timeout. Once KMS returns successfully, canceling the context

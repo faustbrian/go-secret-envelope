@@ -48,7 +48,7 @@
       "purpose": "`secret-envelope` encrypts application-owned secret payloads with one-use AES-256-GCM data keys and delegates key wrapping to an explicit provider. The provider-neutral keyring adapter wraps those keys with versioned AES-256 keys delivered through an application's secret-management boundary. The optional AWS KMS adapter uses `GenerateDataKey` and `Decrypt` and also exposes a verify-only asymmetric KMS boundary for bounded externally signed raw statements. During `Service` operations, transferred plaintext data keys are best-effort zeroized before the call returns.",
       "lifecycle": "stable",
       "kind": "public library",
-      "releasable": false,
+      "releasable": true,
       "family": "integration-and-data-movement",
       "family_label": "Integration And Data Movement",
       "family_description": "Bounded external I/O, data movement, provider boundaries, and derived search state.",

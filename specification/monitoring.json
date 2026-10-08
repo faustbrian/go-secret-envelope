@@ -38,42 +38,42 @@
     {
       "id": "aws-kms-generate-source",
       "kind": "specification",
-      "version": "service/kms v1.55.0 commit 4fef3455fe2dcb5ea3de4e9fbacf889b84c8a255",
-      "url": "https://raw.githubusercontent.com/aws/aws-sdk-go-v2/4fef3455fe2dcb5ea3de4e9fbacf889b84c8a255/service/kms/api_op_GenerateDataKey.go",
-      "sha256": "b165cc5f37bf61ab022fc35b066b09fe6b01504ba8c470bac86795c4370f9510",
-      "specifications": ["AWS KMS SDK Go v2 service/kms v1.55.0"]
+      "version": "service/kms v1.61.3 commit c88f24ba4a32e01258202d54f33bc67598b9e041",
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-go-v2/c88f24ba4a32e01258202d54f33bc67598b9e041/service/kms/api_op_GenerateDataKey.go",
+      "sha256": "bc6c01c47b7e861943a4c1f4068059c137de43528de2bd00a3db3f30e29ad833",
+      "specifications": ["AWS KMS SDK Go v2 service/kms v1.61.3"]
     },
     {
       "id": "aws-kms-decrypt-source",
       "kind": "specification",
-      "version": "service/kms v1.55.0 commit 4fef3455fe2dcb5ea3de4e9fbacf889b84c8a255",
-      "url": "https://raw.githubusercontent.com/aws/aws-sdk-go-v2/4fef3455fe2dcb5ea3de4e9fbacf889b84c8a255/service/kms/api_op_Decrypt.go",
-      "sha256": "9bd9d5a826f572c3b87580f85ed3a2af1882a52f9373ae4e9716a09afac71a1e",
-      "specifications": ["AWS KMS SDK Go v2 service/kms v1.55.0"]
+      "version": "service/kms v1.61.3 commit c88f24ba4a32e01258202d54f33bc67598b9e041",
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-go-v2/c88f24ba4a32e01258202d54f33bc67598b9e041/service/kms/api_op_Decrypt.go",
+      "sha256": "59d805a57353af5f41919c4be1288131fcb4d1bd0191244e6fac2df5114f3b74",
+      "specifications": ["AWS KMS SDK Go v2 service/kms v1.61.3"]
     },
     {
       "id": "aws-kms-verify-source",
       "kind": "specification",
-      "version": "service/kms v1.55.0 commit 4fef3455fe2dcb5ea3de4e9fbacf889b84c8a255",
-      "url": "https://raw.githubusercontent.com/aws/aws-sdk-go-v2/4fef3455fe2dcb5ea3de4e9fbacf889b84c8a255/service/kms/api_op_Verify.go",
-      "sha256": "fef5c4338aea512851e41f5cdd2ac80d63c4fd9bbcd17a471578fca48281583d",
-      "specifications": ["AWS KMS SDK Go v2 service/kms v1.55.0"]
+      "version": "service/kms v1.61.3 commit c88f24ba4a32e01258202d54f33bc67598b9e041",
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-go-v2/c88f24ba4a32e01258202d54f33bc67598b9e041/service/kms/api_op_Verify.go",
+      "sha256": "6202ce1ef818d1bf3dc50d2ca20f406552bd7cc8ac51fcf7fcb66ee07c7bc3e5",
+      "specifications": ["AWS KMS SDK Go v2 service/kms v1.61.3"]
     },
     {
       "id": "aws-kms-enums-source",
       "kind": "registry",
-      "version": "service/kms v1.55.0 commit 4fef3455fe2dcb5ea3de4e9fbacf889b84c8a255",
-      "url": "https://raw.githubusercontent.com/aws/aws-sdk-go-v2/4fef3455fe2dcb5ea3de4e9fbacf889b84c8a255/service/kms/types/enums.go",
+      "version": "service/kms v1.61.3 commit c88f24ba4a32e01258202d54f33bc67598b9e041",
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-go-v2/c88f24ba4a32e01258202d54f33bc67598b9e041/service/kms/types/enums.go",
       "sha256": "76178571890509f163429615c6396db5f65f78959648557a32b9c4e0ce2916f5",
-      "specifications": ["AWS KMS SDK Go v2 service/kms v1.55.0"]
+      "specifications": ["AWS KMS SDK Go v2 service/kms v1.61.3"]
     },
     {
       "id": "aws-kms-releases",
       "kind": "releases",
-      "version": "service/kms main path feed reviewed 2026-10-03",
+      "version": "service/kms main path feed reviewed 2026-10-08",
       "url": "https://github.com/aws/aws-sdk-go-v2/commits/main/service/kms.atom",
-      "sha256": "a3ab5e422e773e49243f94fbdb0ebb74f57e8e0ba6c55d44990dc8288cef4314",
-      "specifications": ["AWS KMS SDK Go v2 service/kms v1.55.0"]
+      "sha256": "7f0c0e90a4e6c987ae775408f73d35f4af9b6a6f01e86a34a9e7c95135c9f7ed",
+      "specifications": ["AWS KMS SDK Go v2 service/kms v1.61.3"]
     },
     {
       "id": "rfc8017-source",

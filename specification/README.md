@@ -4,8 +4,8 @@
 
 The executable lane proves repository behavior. Empty fixture,
 interoperability, and differential lanes mean no official corpus, live
-provider, or maintained-peer agreement is claimed. AWS recording-client tests
-are bounded to the pinned SDK seam.
+provider, or maintained-peer agreement is claimed. AWS recording-client and controlled real-SDK HTTP tests are bounded to the
+pinned SDK seam and synthetic wire responses; they do not contact AWS.
 
 NIST release authorities reuse the official stable publication bytes because
 the corresponding CSRC HTML release pages contain request-specific transforms
@@ -14,6 +14,19 @@ responsible for checking supersession; the online gate detects in-place changes
 to the official publication artifacts.
 
 ## Upstream review history
+
+### 2026-10-08
+
+- Adopt KMS v1.61.3 at `c88f24ba4a32e01258202d54f33bc67598b9e041`
+  with core v1.47.2 and Smithy v1.28.4. Refresh the four immutable
+  operation/model bindings and the rolling release-feed observation.
+- Controlled real-SDK HTTP fixtures preserve exact context, binary values,
+  resolved key identity, raw verification, failure categories and cancellation.
+  Received bodies close on success, errors and both interceptor abort stages.
+  The same abort fixtures fail on the bot's KMS v1.59.0 graph.
+- Schema-based serialization and centralized retry tracing do not expand the
+  owned algorithm allowlist or change persisted envelope bytes. These synthetic
+  fixtures do not qualify live AWS permissions, credentials or caller retries.
 
 ### 2026-10-03
 
@@ -66,7 +79,7 @@ to the official publication artifacts.
 | SECRETENVELOPE-DEC-004 | `nist-sp800-38d-source` | `TestEnvelopeParsingRejectsMalformedOrOversizedInput`, `TestEnvelopeAcceptsExactSizeLimits` | `FuzzParseEnvelope` |
 | SECRETENVELOPE-DEC-005 | `nist-sp800-38d-source` | `TestProviderWrapsAndUnwrapsDataKeysByReferenceAndContext`, `TestProviderUsesExactBoundedWireAllocations` | Not assessed |
 | SECRETENVELOPE-DEC-006 | `nist-sp800-38d-source` | `TestServiceRejectsInvalidKeyMaterialAndEntropy`, `TestProviderRejectsEntropyFailures`, `TestProviderRejectsInvalidGenerateResponsesAndZeroizesKeys` | Not assessed |
-| SECRETENVELOPE-DEC-007 | `aws-kms-generate-source`, `aws-kms-decrypt-source`, `aws-kms-enums-source` | `TestProviderGeneratesAnAES256DataKey`, `TestProviderDecryptsWithTheExactKeyAndContext` | Not assessed |
-| SECRETENVELOPE-DEC-008 | `aws-kms-decrypt-source`, `aws-kms-generate-source`, `aws-kms-enums-source` | `TestProviderGeneratesAnAES256DataKey`, `TestProviderDecryptsWithTheExactKeyAndContext`, `TestProviderRejectsDecryptFailuresAndMalformedResponses` | Not assessed |
-| SECRETENVELOPE-DEC-009 | `aws-kms-verify-source`, `aws-kms-enums-source`, `rfc8017-source`, `fips186-5-source`, `rfc8032-source`, `fips180-4-source` | `TestSignatureVerifierAuthenticatesExactRawMessage`, `TestSignatureVerifierAcceptsReviewedRawAlgorithms`, `TestSignatureVerifierRejectsInvalidConstructionAndRequests` | Not assessed |
-| SECRETENVELOPE-DEC-010 | `aws-kms-verify-source` | `TestSignatureVerifierAcceptsExactRequestLimits`, `TestSignatureVerifierClassifiesFailuresWithoutRenderingCauses`, `TestSignatureVerifierRejectsInvalidConstructionAndRequests` | Not assessed |
+| SECRETENVELOPE-DEC-007 | `aws-kms-generate-source`, `aws-kms-decrypt-source`, `aws-kms-enums-source` | `TestProviderGeneratesAnAES256DataKey`, `TestProviderDecryptsWithTheExactKeyAndContext` , `TestSDKWireRoundTripPreservesEnvelopeBindings`, `TestSDKClosesReceivedBodiesWhenInterceptorsReject`, `TestSDKDataKeyFailureCategoriesAndCleanup`, `TestSDKPreservesCallerCancellation`| Not assessed |
+| SECRETENVELOPE-DEC-008 | `aws-kms-decrypt-source`, `aws-kms-generate-source`, `aws-kms-enums-source` | `TestProviderGeneratesAnAES256DataKey`, `TestProviderDecryptsWithTheExactKeyAndContext`, `TestProviderRejectsDecryptFailuresAndMalformedResponses` , `TestSDKWireRoundTripPreservesEnvelopeBindings`, `TestSDKDataKeyFailureCategoriesAndCleanup`| Not assessed |
+| SECRETENVELOPE-DEC-009 | `aws-kms-verify-source`, `aws-kms-enums-source`, `rfc8017-source`, `fips186-5-source`, `rfc8032-source`, `fips180-4-source` | `TestSignatureVerifierAuthenticatesExactRawMessage`, `TestSignatureVerifierAcceptsReviewedRawAlgorithms`, `TestSignatureVerifierRejectsInvalidConstructionAndRequests` , `TestSDKVerifyWireAndFailureCategories`| Not assessed |
+| SECRETENVELOPE-DEC-010 | `aws-kms-verify-source` | `TestSignatureVerifierAcceptsExactRequestLimits`, `TestSignatureVerifierClassifiesFailuresWithoutRenderingCauses`, `TestSignatureVerifierRejectsInvalidConstructionAndRequests` , `TestSDKVerifyWireAndFailureCategories`, `TestSDKClosesReceivedBodiesWhenInterceptorsReject`, `TestSDKPreservesCallerCancellation`| Not assessed |

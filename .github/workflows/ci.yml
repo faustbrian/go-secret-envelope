@@ -13,6 +13,11 @@ on:
         required: false
         default: false
         type: boolean
+      security_diagnostic:
+        description: Run development security qualification, not release CI
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -20,10 +25,74 @@ permissions:
 
 jobs:
   ci:
-    uses: faustbrian/go-library-tools/.github/workflows/library-ci.yml@531e4db50fd81a7201257a7b488a0cf22d333aca # v1.4.0 W14 enforcement
+    if: github.event_name != 'workflow_dispatch' || !inputs.security_diagnostic
+    uses: faustbrian/go-library-tools/.github/workflows/library-ci.yml@be0fd7d09b02c9dff29e6b00a5245ceac3cdfdfb # v1.8.5 W14 enforcement
     with:
       tooling_sha: 531e4db50fd81a7201257a7b488a0cf22d333aca
       release_dry_run: ${{ inputs.release_dry_run || false }}
+
+  security-diagnostic:
+    name: Native security qualification (development only)
+    if: github.event_name == 'workflow_dispatch' && inputs.security_diagnostic
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      GOWORK: off
+      GOTOOLCHAIN: local
+      GOMAXPROCS: '2'
+      GOFLAGS: -p=1
+    steps:
+      - name: Reject release substitution
+        env:
+          RELEASE_DRY_RUN: ${{ inputs.release_dry_run }}
+        run: test "${RELEASE_DRY_RUN}" = false
+      - name: Initialize task-owned caches
+        env:
+          TASK_ROOT: ${{ runner.temp }}/golib-security-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          mkdir -p "${TASK_ROOT}/build" "${TASK_ROOT}/modules" "${TASK_ROOT}/tmp" "${TASK_ROOT}/lint"
+          printf 'GOCACHE=%s\nGOMODCACHE=%s\nGOTMPDIR=%s\nGOLANGCI_LINT_CACHE=%s\nTMPDIR=%s\n' \
+            "${TASK_ROOT}/build" "${TASK_ROOT}/modules" "${TASK_ROOT}/tmp" \
+            "${TASK_ROOT}/lint" "${TASK_ROOT}/tmp" >>"${GITHUB_ENV}"
+      - name: Check out exact producer with complete history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: producer
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Check out reviewed diagnostic tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: faustbrian/go-library-tools
+          ref: 7744b4df6c4750d43af980ee332607dc2c1827ad
+          path: security-tooling
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.0'
+          cache: false
+      - name: Build development qualification tooling
+        working-directory: security-tooling
+        run: go build -p 1 -trimpath -buildvcs=false -o "${GOTMPDIR}/golib" ./cmd/golib
+      - name: Run native security and bounded checks
+        working-directory: producer
+        run: '"${GOTMPDIR}/golib" check --local --module .'
+      - name: Remove task-owned qualification resources
+        if: always()
+        env:
+          TASK_ROOT: ${{ runner.temp }}/golib-security-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          for target in "${TASK_ROOT}" "${GITHUB_WORKSPACE}/producer" "${GITHUB_WORKSPACE}/security-tooling"; do
+            if [[ -d "${target}" ]]; then
+              find "${target}" -type d -exec chmod u+w {} +
+              find "${target}" -depth -delete
+            fi
+          done
 
   required:
     name: Required

@@ -157,9 +157,10 @@ func NewService(provider KeyProvider, options ...Option) (*Service, error) {
 // provider without adding a deadline or retry, and best-effort zeroizes the
 // transferred plaintext data key before returning. It returns
 // ErrServiceRequired, ErrInvalidRequest, ErrInvalidEnvelope, or ErrEntropy for
-// those stable categories; provider failures wrap ErrKeyProvider and retain
-// their cause. After the provider returns, canceling ctx cannot interrupt the
-// nonce read or local AES-GCM encryption. Concurrent calls require
+// those stable categories. Provider failures wrap ErrKeyProvider and retain only
+// context cancellation or deadline categories. After the provider returns,
+// canceling ctx cannot interrupt the nonce read or local AES-GCM encryption.
+// Concurrent calls require
 // concurrent-safe Service dependencies.
 func (service *Service) Encrypt(
 	ctx context.Context,
@@ -187,7 +188,7 @@ func (service *Service) Encrypt(
 		return Envelope{}, operationError{
 			operation: "encrypt",
 			kind:      ErrKeyProvider,
-			cause:     err,
+			cause:     safeErrorCause(err),
 		}
 	}
 	defer zero(dataKey.plaintext)
@@ -206,7 +207,6 @@ func (service *Service) Encrypt(
 		return Envelope{}, operationError{
 			operation: "encrypt",
 			kind:      ErrEntropy,
-			cause:     err,
 		}
 	}
 
@@ -227,7 +227,8 @@ func (service *Service) Encrypt(
 // best-effort zeroizes the transferred plaintext data key, and returns a
 // caller-owned plaintext payload. It returns ErrServiceRequired,
 // ErrInvalidRequest, ErrInvalidEnvelope, or ErrAuthentication for those stable
-// categories; provider failures wrap ErrKeyProvider and retain their cause.
+// categories. Provider failures wrap ErrKeyProvider and retain only context
+// cancellation or deadline categories.
 // After the provider returns, canceling ctx cannot interrupt local AES-GCM
 // decryption. Concurrent calls require concurrent-safe Service dependencies.
 func (service *Service) Decrypt(
@@ -251,7 +252,7 @@ func (service *Service) Decrypt(
 		return nil, operationError{
 			operation: "decrypt",
 			kind:      ErrKeyProvider,
-			cause:     err,
+			cause:     safeErrorCause(err),
 		}
 	}
 	defer zero(plaintextKey)
@@ -285,7 +286,22 @@ func (err operationError) Error() string {
 }
 
 func (err operationError) Unwrap() []error {
+	if err.cause == nil {
+		return []error{err.kind}
+	}
+
 	return []error{err.kind, err.cause}
+}
+
+func safeErrorCause(err error) error {
+	switch {
+	case errors.Is(err, context.Canceled):
+		return context.Canceled
+	case errors.Is(err, context.DeadlineExceeded):
+		return context.DeadlineExceeded
+	default:
+		return nil
+	}
 }
 
 func zero(value []byte) {

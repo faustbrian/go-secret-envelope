@@ -15,6 +15,22 @@ to the official publication artifacts.
 
 ## Upstream review history
 
+### 2026-10-03
+
+- Reviewed the rolling KMS path feed through the v1.61.1 release commit
+  `52ba2565aefa81106ba8aca112e7c42176cc28a7` (2026-09-24), compared with the
+  previously reviewed v1.59.0 commit
+  `afdc89fb3e9277f2c13acbdbe088c8c32aab38f9`. The intervening releases move
+  retry-header handling into retry middleware (v1.60.0), enable schema-based
+  serialization (v1.61.0), and update SDK dependencies (v1.61.1).
+  The GenerateDataKey, Decrypt and Verify input/output declarations and enum
+  source are unchanged between those commits; their generated transport code
+  is not byte-identical. This review updates only the release-feed observation,
+  retaining the repository's v1.55.0 dependency and immutable operation/model
+  source bindings. It does not upgrade the SDK or certify the newer transport.
+  Feed changes remain subject to the online authority gate; the other authority
+  pins, global review date and specification decisions are unchanged.
+
 ### 2026-09-05
 
 - The AWS SDK for Go v2 KMS path feed added the v1.59.0 release commit

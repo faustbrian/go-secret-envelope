@@ -1,4 +1,4 @@
-module github.com/faustbrian/go-secret-envelope
+module github.com/faustbrian/go-secret-envelope/v2
 
 go 1.27.0
 

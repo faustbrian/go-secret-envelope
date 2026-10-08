@@ -66,11 +66,10 @@ authentication. AWS envelope failures distinguish missing clients, invalid
 requests, KMS operations, and invalid responses. Signature verification
 distinguishes invalid construction/request, operational KMS failure, an
 authenticated rejection, and an invalid response. Wrapped provider causes
-remain available to `errors.Is` and `errors.As`. `Error()`, `%v`, and `%+v`
-formatting do not render those causes. Callers must not use Go-syntax `%#v`
-formatting on concrete root or AWS data-key operation errors when a provider
-cause may contain sensitive data. Signature-operation errors explicitly redact
-every formatting verb.
+do not cross the package boundary because they can contain sensitive request or
+provider data. Errors expose stable package categories through `errors.Is` and
+preserve only safe `context.Canceled` or `context.DeadlineExceeded` identity.
+Error and debug formatting cannot render discarded provider causes.
 
 `Envelope.MarshalBinary` and `ParseEnvelope` own the stable persistence format:
 
@@ -123,5 +122,5 @@ and implicit algorithm selection are rejected.
 `ErrSignatureRejected` is an authenticated negative result.
 `ErrKMSSignatureVerification` is an operational KMS failure.
 `ErrInvalidSignatureResponse` rejects incomplete or contradictory successful
-responses. Wrapped causes remain available to `errors.Is` and `errors.As`, but
-formatted errors never render them.
+responses. Provider causes are discarded; stable package and safe context
+cancellation/deadline categories remain available through `errors.Is`.

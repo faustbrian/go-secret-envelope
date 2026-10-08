@@ -8,7 +8,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/kms/types"
-	secretenvelope "github.com/faustbrian/go-secret-envelope"
+	secretenvelope "github.com/faustbrian/go-secret-envelope/v2"
+)
+
+const (
+	maximumKeyReferenceBytes   = 2_048
+	maximumCiphertextBlobBytes = 6_144
 )
 
 var (
@@ -50,7 +55,8 @@ func New(client Client) (*Provider, error) {
 	return &Provider{client: client}, nil
 }
 
-// GenerateDataKey asks KMS for a fresh AES-256 key and its wrapped copy.
+// GenerateDataKey asks KMS for a fresh AES-256 key and its wrapped copy. It
+// rejects key references larger than the AWS KMS request limit before I/O.
 func (provider *Provider) GenerateDataKey(
 	ctx context.Context,
 	keyReference string,
@@ -60,7 +66,7 @@ func (provider *Provider) GenerateDataKey(
 		return secretenvelope.DataKey{}, ErrClientRequired
 	}
 	contextValues := encryptionContext.Values()
-	if ctx == nil || keyReference == "" || len(contextValues) == 0 {
+	if ctx == nil || !validDataKeyReference(keyReference) || len(contextValues) == 0 {
 		return secretenvelope.DataKey{}, ErrInvalidRequest
 	}
 
@@ -76,7 +82,7 @@ func (provider *Provider) GenerateDataKey(
 		return secretenvelope.DataKey{}, operationError{
 			operation: "generate",
 			kind:      ErrKMS,
-			cause:     err,
+			cause:     safeProviderCause(err),
 		}
 	}
 	if output == nil {
@@ -96,7 +102,9 @@ func (provider *Provider) GenerateDataKey(
 	return dataKey, nil
 }
 
-// DecryptDataKey unwraps one data key with its exact key and context.
+// DecryptDataKey unwraps one data key with its exact key and context. It rejects
+// key references and ciphertext blobs larger than AWS KMS request limits before
+// copying or I/O.
 func (provider *Provider) DecryptDataKey(
 	ctx context.Context,
 	keyReference string,
@@ -108,8 +116,9 @@ func (provider *Provider) DecryptDataKey(
 	}
 	contextValues := encryptionContext.Values()
 	if ctx == nil ||
-		keyReference == "" ||
+		!validDataKeyReference(keyReference) ||
 		len(ciphertext) == 0 ||
+		len(ciphertext) > maximumCiphertextBlobBytes ||
 		len(contextValues) == 0 {
 		return nil, ErrInvalidRequest
 	}
@@ -128,7 +137,7 @@ func (provider *Provider) DecryptDataKey(
 		return nil, operationError{
 			operation: "decrypt",
 			kind:      ErrKMS,
-			cause:     err,
+			cause:     safeProviderCause(err),
 		}
 	}
 	if output == nil ||
@@ -156,7 +165,26 @@ func (err operationError) Error() string {
 }
 
 func (err operationError) Unwrap() []error {
+	if err.cause == nil {
+		return []error{err.kind}
+	}
+
 	return []error{err.kind, err.cause}
+}
+
+func validDataKeyReference(value string) bool {
+	return value != "" && len(value) <= maximumKeyReferenceBytes
+}
+
+func safeProviderCause(err error) error {
+	switch {
+	case errors.Is(err, context.Canceled):
+		return context.Canceled
+	case errors.Is(err, context.DeadlineExceeded):
+		return context.DeadlineExceeded
+	default:
+		return nil
+	}
 }
 
 func zero(value []byte) {

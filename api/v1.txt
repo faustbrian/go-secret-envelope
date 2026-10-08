@@ -1,4 +1,4 @@
-package secretenvelope // import "github.com/faustbrian/go-secret-envelope/v2"
+package secretenvelope // import "github.com/faustbrian/go-secret-envelope"
 
 Package secretenvelope provides authenticated envelope encryption for
 application-owned secret payloads.
@@ -164,11 +164,10 @@ func (service *Service) Decrypt(
     Decrypt forwards ctx to the provider without adding a deadline or retry,
     best-effort zeroizes the transferred plaintext data key, and returns
     a caller-owned plaintext payload. It returns ErrServiceRequired,
-    ErrInvalidRequest, ErrInvalidEnvelope, or ErrAuthentication for those
-    stable categories. Provider failures wrap ErrKeyProvider and retain only
-    context cancellation or deadline categories. After the provider returns,
-    canceling ctx cannot interrupt local AES-GCM decryption. Concurrent calls
-    require concurrent-safe Service dependencies.
+    ErrInvalidRequest, ErrInvalidEnvelope, or ErrAuthentication for those stable
+    categories; provider failures wrap ErrKeyProvider and retain their cause.
+    After the provider returns, canceling ctx cannot interrupt local AES-GCM
+    decryption. Concurrent calls require concurrent-safe Service dependencies.
 
 func (service *Service) Encrypt(
 	ctx context.Context,
@@ -177,13 +176,13 @@ func (service *Service) Encrypt(
     Encrypt borrows the request plaintext for this call, forwards ctx
     to the provider without adding a deadline or retry, and best-effort
     zeroizes the transferred plaintext data key before returning. It returns
-    ErrServiceRequired, ErrInvalidRequest, ErrInvalidEnvelope, or ErrEntropy
-    for those stable categories. Provider failures wrap ErrKeyProvider and
-    retain only context cancellation or deadline categories. After the provider
-    returns, canceling ctx cannot interrupt the nonce read or local AES-GCM
-    encryption. Concurrent calls require concurrent-safe Service dependencies.
+    ErrServiceRequired, ErrInvalidRequest, ErrInvalidEnvelope, or ErrEntropy for
+    those stable categories; provider failures wrap ErrKeyProvider and retain
+    their cause. After the provider returns, canceling ctx cannot interrupt
+    the nonce read or local AES-GCM encryption. Concurrent calls require
+    concurrent-safe Service dependencies.
 
-package awskms // import "github.com/faustbrian/go-secret-envelope/v2/adapters/awskms"
+package awskms // import "github.com/faustbrian/go-secret-envelope/adapters/awskms"
 
 Package awskms adapts AWS KMS data-key operations to secret-envelope key
 wrapping and authenticates bounded externally signed raw statements with
@@ -260,8 +259,6 @@ func (provider *Provider) DecryptDataKey(
 	encryptionContext secretenvelope.Context,
 ) ([]byte, error)
     DecryptDataKey unwraps one data key with its exact key and context.
-    It rejects key references and ciphertext blobs larger than AWS KMS request
-    limits before copying or I/O.
 
 func (provider *Provider) GenerateDataKey(
 	ctx context.Context,
@@ -269,7 +266,6 @@ func (provider *Provider) GenerateDataKey(
 	encryptionContext secretenvelope.Context,
 ) (secretenvelope.DataKey, error)
     GenerateDataKey asks KMS for a fresh AES-256 key and its wrapped copy.
-    It rejects key references larger than the AWS KMS request limit before I/O.
 
 type SignatureClient interface {
 	Verify(
@@ -305,7 +301,7 @@ func (verifier *SignatureVerifier) Verify(
     Verify authenticates one exact raw message. The method owns copies of caller
     bytes before invoking KMS and returns stable, secret-safe failure classes.
 
-package keyring // import "github.com/faustbrian/go-secret-envelope/v2/adapters/keyring"
+package keyring // import "github.com/faustbrian/go-secret-envelope/adapters/keyring"
 
 Package keyring wraps envelope data keys with versioned AES-256 keys that are
 supplied by the application's secret-delivery boundary.

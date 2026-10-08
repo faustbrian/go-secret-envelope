@@ -5,7 +5,7 @@
 [![Coverage](https://img.shields.io/badge/coverage-100%25_required-blue)](CONTRIBUTING.md#verification)
 [![Mutation](https://img.shields.io/badge/mutation-100%25_required-blue)](CONTRIBUTING.md#verification)
 [![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
-[![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-secret-envelope.svg)](https://pkg.go.dev/github.com/faustbrian/go-secret-envelope)
+[![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-secret-envelope/v2.svg)](https://pkg.go.dev/github.com/faustbrian/go-secret-envelope/v2)
 [![Release](https://img.shields.io/github/v/release/faustbrian/go-secret-envelope?sort=semver)](https://github.com/faustbrian/go-secret-envelope/releases)
 [![Go](https://img.shields.io/badge/go-1.27.0-00ADD8?logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -19,21 +19,24 @@ verify-only asymmetric KMS boundary for bounded externally signed raw
 statements. During `Service` operations, transferred plaintext data keys are
 best-effort zeroized before the call returns.
 
-The module is active and stable at v1. It requires Go 1.27.0.
+Main prepares v2 and requires Go 1.27.0. The latest published release remains
+v1.0.0 on the import path without `/v2` until v2 qualification is complete.
 
 ## Install
 
+After v2 is published, use:
+
 ```sh
-go get github.com/faustbrian/go-secret-envelope@v1.0.0
+go get github.com/faustbrian/go-secret-envelope/v2@v2
 ```
 
-The root v1 module currently contains all three public packages:
+The root v2 module contains all three public packages:
 
 | Package | Select it when |
 | --- | --- |
-| `github.com/faustbrian/go-secret-envelope` | You need the envelope format, authenticated context, and `KeyProvider` contract. |
-| `github.com/faustbrian/go-secret-envelope/adapters/keyring` | Wrapping keys are delivered to the process by an approved secret manager. |
-| `github.com/faustbrian/go-secret-envelope/adapters/awskms` | AWS KMS generates and unwraps data keys or verifies externally signed statements. |
+| `github.com/faustbrian/go-secret-envelope/v2` | You need the envelope format, authenticated context, and `KeyProvider` contract. |
+| `github.com/faustbrian/go-secret-envelope/v2/adapters/keyring` | Wrapping keys are delivered to the process by an approved secret manager. |
+| `github.com/faustbrian/go-secret-envelope/v2/adapters/awskms` | AWS KMS generates and unwraps data keys or verifies externally signed statements. |
 
 Because the AWS KMS adapter was released inside the root module, installing the
 root currently includes the AWS SDK dependencies even when an application uses
@@ -141,9 +144,8 @@ if err := verifier.Verify(
 - Redacted text, JSON, and `slog` representations.
 - Plaintext payloads bounded to 4 MiB, with bounded wrapped keys, contexts, and
   envelopes.
-- Secret-safe `Error()` text and `%v`/`%+v` formatting that retain `errors.Is`
-  cause traversal. Avoid Go-syntax `%#v` formatting of concrete errors because
-  it can expose wrapped provider causes.
+- Secret-safe error values that expose stable categories and safe context
+  cancellation/deadline identity without retaining other provider causes.
 - Verify-only KMS authentication for raw messages up to 4096 bytes with
   explicit PSS, ECDSA, or Ed25519 algorithms.
 

@@ -5,14 +5,14 @@
   "modules": [
     {
       "directory": ".",
-      "module_path": "github.com/faustbrian/go-secret-envelope",
+      "module_path": "github.com/faustbrian/go-secret-envelope/v2",
       "go_version": "1.27.0",
       "packages": [
         {
           "module_directory": ".",
           "directory": ".",
           "name": "secretenvelope",
-          "import_path": "github.com/faustbrian/go-secret-envelope",
+          "import_path": "github.com/faustbrian/go-secret-envelope/v2",
           "kind": "public",
           "production": true,
           "executable": true,
@@ -24,7 +24,7 @@
           "module_directory": ".",
           "directory": "adapters/awskms",
           "name": "awskms",
-          "import_path": "github.com/faustbrian/go-secret-envelope/adapters/awskms",
+          "import_path": "github.com/faustbrian/go-secret-envelope/v2/adapters/awskms",
           "kind": "public",
           "production": true,
           "executable": true,
@@ -36,7 +36,7 @@
           "module_directory": ".",
           "directory": "adapters/keyring",
           "name": "keyring",
-          "import_path": "github.com/faustbrian/go-secret-envelope/adapters/keyring",
+          "import_path": "github.com/faustbrian/go-secret-envelope/v2/adapters/keyring",
           "kind": "public",
           "production": true,
           "executable": true,
@@ -53,7 +53,7 @@
       "family_label": "Integration And Data Movement",
       "family_description": "Bounded external I/O, data movement, provider boundaries, and derived search state.",
       "family_order": 7,
-      "version": "1.0.0",
+      "version": "2.0.0",
       "tag_prefix": "v",
       "owned_dependencies": [],
       "reverse_owned_dependencies": [
@@ -98,12 +98,12 @@
         ],
         "public_package_identifier": "secretenvelope",
         "primary_entry_packages": [
-          "github.com/faustbrian/go-secret-envelope"
+          "github.com/faustbrian/go-secret-envelope/v2"
         ],
         "package_selection": {
-          "github.com/faustbrian/go-secret-envelope": "Use for bounded AES-256-GCM envelopes, immutable authenticated context, versioned persistence framing, and the explicit key-provider contract.",
-          "github.com/faustbrian/go-secret-envelope/adapters/awskms": "Use to generate and unwrap data keys with AWS KMS or to verify bounded externally signed raw statements through a verify-only KMS boundary.",
-          "github.com/faustbrian/go-secret-envelope/adapters/keyring": "Use to wrap data keys with an immutable in-process set of versioned AES-256 keys supplied by the application's secret-delivery boundary."
+          "github.com/faustbrian/go-secret-envelope/v2": "Use for bounded AES-256-GCM envelopes, immutable authenticated context, versioned persistence framing, and the explicit key-provider contract.",
+          "github.com/faustbrian/go-secret-envelope/v2/adapters/awskms": "Use to generate and unwrap data keys with AWS KMS or to verify bounded externally signed raw statements through a verify-only KMS boundary.",
+          "github.com/faustbrian/go-secret-envelope/v2/adapters/keyring": "Use to wrap data keys with an immutable in-process set of versioned AES-256 keys supplied by the application's secret-delivery boundary."
         },
         "lifecycle_status": "active",
         "maturity": "stable",
@@ -126,8 +126,8 @@
         },
         "optional_owned_dependencies": [],
         "adapters": [
-          "github.com/faustbrian/go-secret-envelope/adapters/awskms",
-          "github.com/faustbrian/go-secret-envelope/adapters/keyring"
+          "github.com/faustbrian/go-secret-envelope/v2/adapters/awskms",
+          "github.com/faustbrian/go-secret-envelope/v2/adapters/keyring"
         ],
         "companions": [],
         "supported_go": {
@@ -161,7 +161,7 @@
           "examples": "example_test.go",
           "faq": "docs/faq.md",
           "changelog": "CHANGELOG.md",
-          "pkg_go_dev": "https://pkg.go.dev/github.com/faustbrian/go-secret-envelope",
+          "pkg_go_dev": "https://pkg.go.dev/github.com/faustbrian/go-secret-envelope/v2",
           "ecosystem_index": "https://github.com/faustbrian/go-library-tools/blob/v1.5.3/docs/ecosystem/README.md"
         },
         "known_good_compatibility_sets": [],

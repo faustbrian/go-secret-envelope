@@ -77,12 +77,16 @@ func (envelope Envelope) MarshalBinary() ([]byte, error) {
 	copy(encoded[:4], envelopeMagic)
 	encoded[4] = envelopeVersion
 	encoded[5] = algorithmAES256GCM
+	// #nosec G115 -- valid() limits key references to 2048 bytes.
 	binary.BigEndian.PutUint16(encoded[6:8], uint16(len(envelope.keyReference)))
 	binary.BigEndian.PutUint32(
 		encoded[8:12],
+		// #nosec G115 -- valid() limits wrapped keys to 65536 bytes.
 		uint32(len(envelope.encryptedDataKey)),
 	)
+	// #nosec G115 -- valid() requires the nonce to be exactly 12 bytes.
 	encoded[12] = byte(len(envelope.nonce))
+	// #nosec G115 -- valid() limits ciphertext to MaxPlaintextSize+16 bytes.
 	binary.BigEndian.PutUint32(encoded[13:17], uint32(len(envelope.ciphertext)))
 	offset := envelopeHeaderSize
 	offset += copy(encoded[offset:], envelope.keyReference)

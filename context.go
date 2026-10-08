@@ -47,9 +47,11 @@ func NewContext(values map[string]string) (Context, error) {
 	length := make([]byte, 4)
 	for _, key := range keys {
 		value := cloned[key]
+		// #nosec G115 -- admission limits cloned context keys to 256 bytes.
 		binary.BigEndian.PutUint32(length, uint32(len(key)))
 		additionalData = append(additionalData, length...)
 		additionalData = append(additionalData, key...)
+		// #nosec G115 -- admission limits cloned context values to 1024 bytes.
 		binary.BigEndian.PutUint32(length, uint32(len(value)))
 		additionalData = append(additionalData, length...)
 		additionalData = append(additionalData, value...)

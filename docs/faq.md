@@ -76,10 +76,10 @@ tests use injected clients and do not prove live AWS connectivity or IAM.
 Use `errors.Is` or `errors.As` against the stable categories documented in the
 [API guide](api.md); do not branch on error text. Invalid request or envelope
 errors indicate local input or persisted-format problems. Provider and KMS
-errors retain a cause for programmatic inspection, while authentication errors
-mean the key, context, nonce, ciphertext, or signature did not authenticate.
-Log the stable error category and non-secret operation metadata, never keys,
-plaintext, credentials, ciphertext, signatures, or Go-syntax `%#v` errors.
+errors expose stable package categories and safe context cancellation/deadline
+identity, but discard all other underlying causes. Authentication errors mean
+the key, context, nonce, ciphertext, or signature did not authenticate. Log
+only the stable error category and non-secret operation metadata.
 
 For disclosure and credential-handling incidents, follow the repository
 [security policy](../SECURITY.md). For usage questions and defect reports, see

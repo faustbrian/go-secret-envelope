@@ -16,7 +16,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	secretenvelope "github.com/faustbrian/go-secret-envelope"
+	secretenvelope "github.com/faustbrian/go-secret-envelope/v2"
 )
 
 const (
@@ -184,6 +184,7 @@ func (provider *Provider) wrap(
 		authenticatedCipher.Overhead())
 	wrapped[0] = wrappedDataKeyVersion
 	wrapped = append(wrapped, nonce...)
+	// #nosec G407 -- io.ReadFull fills this nonce from crypto/rand.Reader.
 	wrapped = authenticatedCipher.Seal(
 		wrapped,
 		nonce,
@@ -197,6 +198,7 @@ func (provider *Provider) wrap(
 
 func authenticatedData(keyReference string, context []byte) []byte {
 	encoded := make([]byte, 4, 4+len(keyReference)+len(context))
+	// #nosec G115 -- production callers validate references at 2048 bytes.
 	binary.BigEndian.PutUint32(encoded, uint32(len(keyReference)))
 	encoded = append(encoded, keyReference...)
 	encoded = append(encoded, context...)

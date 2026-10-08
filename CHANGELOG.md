@@ -75,6 +75,28 @@ All notable changes follow Keep a Changelog and semantic versioning.
 - Replace archived monorepo links and completed execution artifacts with a
   standalone, human-oriented documentation structure.
 
+## 2.0.1 - 2026-10-08
+
+This maintenance release is compatible with the published
+[v2.0.0](https://github.com/faustbrian/go-secret-envelope/releases/tag/v2.0.0)
+API and persisted envelope format.
+
+### Changed
+
+- Adopt AWS KMS v1.61.3, core v1.47.2 and Smithy v1.28.4 as a coherent
+  response-cleanup-compatible SDK set. Controlled transport coverage preserves
+  exact context and binary wire values, sanitized failure categories,
+  cancellation and response closure when interceptors reject a response.
+  Rebind immutable AWS operation sources and append their decision history
+  without changing the reviewed algorithms or provider policies.
+  ([3ab8d7c557](https://github.com/faustbrian/go-secret-envelope/commit/3ab8d7c557b00dcc3049b8a4c3bbcf9636a0a0a5))
+
+### Maintenance
+
+- Refresh the immutable reusable CI workflow while preserving the required
+  verification contract.
+  ([3c7674218d](https://github.com/faustbrian/go-secret-envelope/commit/3c7674218dd0209d0cd0185daf631274702fc2b6))
+
 ## 1.0.0 - 2026-08-26
 
 ### Changed

@@ -64,7 +64,7 @@
     {
       "id": "SECRETENVELOPE-DEC-007",
       "authoritative_sources": ["aws-kms-generate-source", "aws-kms-decrypt-source", "aws-kms-enums-source"],
-      "executable_evidence": ["TestProviderGeneratesAnAES256DataKey", "TestProviderDecryptsWithTheExactKeyAndContext"],
+      "executable_evidence": ["TestProviderGeneratesAnAES256DataKey", "TestProviderDecryptsWithTheExactKeyAndContext", "TestSDKWireRoundTripPreservesEnvelopeBindings", "TestSDKClosesReceivedBodiesWhenInterceptorsReject", "TestSDKDataKeyFailureCategoriesAndCleanup", "TestSDKPreservesCallerCancellation"],
       "fixtures": [],
       "fuzz": [],
       "differential_evidence": [],
@@ -74,7 +74,7 @@
     {
       "id": "SECRETENVELOPE-DEC-008",
       "authoritative_sources": ["aws-kms-decrypt-source", "aws-kms-generate-source", "aws-kms-enums-source"],
-      "executable_evidence": ["TestProviderGeneratesAnAES256DataKey", "TestProviderDecryptsWithTheExactKeyAndContext", "TestProviderRejectsDecryptFailuresAndMalformedResponses"],
+      "executable_evidence": ["TestProviderGeneratesAnAES256DataKey", "TestProviderDecryptsWithTheExactKeyAndContext", "TestProviderRejectsDecryptFailuresAndMalformedResponses", "TestSDKWireRoundTripPreservesEnvelopeBindings", "TestSDKDataKeyFailureCategoriesAndCleanup"],
       "fixtures": [],
       "fuzz": [],
       "differential_evidence": [],
@@ -84,7 +84,7 @@
     {
       "id": "SECRETENVELOPE-DEC-009",
       "authoritative_sources": ["aws-kms-verify-source", "aws-kms-enums-source", "rfc8017-source", "fips186-5-source", "rfc8032-source", "fips180-4-source"],
-      "executable_evidence": ["TestSignatureVerifierAuthenticatesExactRawMessage", "TestSignatureVerifierAcceptsReviewedRawAlgorithms", "TestSignatureVerifierRejectsInvalidConstructionAndRequests"],
+      "executable_evidence": ["TestSignatureVerifierAuthenticatesExactRawMessage", "TestSignatureVerifierAcceptsReviewedRawAlgorithms", "TestSignatureVerifierRejectsInvalidConstructionAndRequests", "TestSDKVerifyWireAndFailureCategories"],
       "fixtures": [],
       "fuzz": [],
       "differential_evidence": [],
@@ -94,7 +94,7 @@
     {
       "id": "SECRETENVELOPE-DEC-010",
       "authoritative_sources": ["aws-kms-verify-source"],
-      "executable_evidence": ["TestSignatureVerifierAcceptsExactRequestLimits", "TestSignatureVerifierClassifiesFailuresWithoutRenderingCauses", "TestSignatureVerifierRejectsInvalidConstructionAndRequests"],
+      "executable_evidence": ["TestSignatureVerifierAcceptsExactRequestLimits", "TestSignatureVerifierClassifiesFailuresWithoutRenderingCauses", "TestSignatureVerifierRejectsInvalidConstructionAndRequests", "TestSDKVerifyWireAndFailureCategories", "TestSDKClosesReceivedBodiesWhenInterceptorsReject", "TestSDKPreservesCallerCancellation"],
       "fixtures": [],
       "fuzz": [],
       "differential_evidence": [],

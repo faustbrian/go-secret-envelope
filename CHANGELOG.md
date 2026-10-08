@@ -16,6 +16,16 @@ All notable changes follow Keep a Changelog and semantic versioning.
 
 ### Changed
 
+- Adopt AWS KMS v1.61.3, core v1.47.2 and Smithy v1.28.4 while preserving
+  the public v2 API, persisted envelope format and strict algorithm allowlist.
+  Controlled SDK transport coverage preserves wire bindings, sanitized failures,
+  cancellation and response cleanup, including interceptor rejection paths.
+- Rebind the AWS KMS decisions to the selected immutable operation/model source:
+  - SECRETENVELOPE-DEC-007 sha256:0f1d595f4a17a4baf8bb34f5f45d12ca1ea7e70627b78ae1b5025f778b9f40e0
+  - SECRETENVELOPE-DEC-008 sha256:40216baebd422d96fbad4016138e3fe27e2fe34b465a8388e235931d404fd75a
+  - SECRETENVELOPE-DEC-009 sha256:050db45a0396414af94fe574502a5e0d1c2b079df73501ef21fb5510ebc0f576
+  - SECRETENVELOPE-DEC-010 sha256:e9d4b8c2e3ded1b05c11516312d81e1cc8b0550eb6cde06c007cc2cf81618ad7
+
 - Prepare v2 on main with the required `/v2` module/import suffix. Replace
   provider-specific `errors.Is`/`errors.As` handling with package categories
   and update imports; genuine context categories remain available.

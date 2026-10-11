@@ -14,7 +14,7 @@ Run the benchmark directly with allocation reporting:
 go test -run '^$' -bench '^BenchmarkServiceRoundTrip$' -benchmem .
 ```
 
-The complete `make check` contract also runs this benchmark with the
+The explicit full `make check-full` contract also runs this benchmark with the
 repository's bounded gate settings.
 
 For useful comparisons, run repeated samples on the same host with the same Go

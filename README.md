@@ -3,7 +3,7 @@
 [![CI](https://github.com/faustbrian/go-secret-envelope/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/faustbrian/go-secret-envelope/actions/workflows/ci.yml)
 [![CodeQL](https://img.shields.io/badge/CodeQL-required-blue)](https://github.com/faustbrian/go-secret-envelope/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/badge/coverage-100%25_required-blue)](CONTRIBUTING.md#verification)
-[![Mutation](https://img.shields.io/badge/mutation-100%25_required-blue)](CONTRIBUTING.md#verification)
+[![Mutation](https://img.shields.io/badge/mutation-local%20%2F%20scheduled-blue)](CONTRIBUTING.md#verification)
 [![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
 [![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-secret-envelope/v2.svg)](https://pkg.go.dev/github.com/faustbrian/go-secret-envelope/v2)
 [![Release](https://img.shields.io/github/v/release/faustbrian/go-secret-envelope?sort=semver)](https://github.com/faustbrian/go-secret-envelope/releases)
@@ -174,8 +174,14 @@ must return promptly.
 - [Release history](CHANGELOG.md)
 
 For ecosystem-wide selection and ownership guidance, see the versioned
-[Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.5.3/docs/ecosystem/README.md)
-and its [Integration and data movement family](https://github.com/faustbrian/go-library-tools/blob/v1.5.3/docs/ecosystem/design-language.md#package-families-and-selection).
+[Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v2.1.1/docs/ecosystem/README.md)
+and its [Integration and data movement family](https://github.com/faustbrian/go-library-tools/blob/v2.1.1/docs/ecosystem/design-language.md#package-families-and-selection).
+
+Start development with standalone `GOWORK=off go test ./...`. `make check` and
+`make ci` use bounded public-verifier checks; online specification authority and
+full campaigns remain explicit via `make check-full`. See
+[contributor guidance](CONTRIBUTING.md#verification) for deterministic seeds,
+focused active fuzzing, optional local mutation and provider/release boundaries.
 
 ## License
 

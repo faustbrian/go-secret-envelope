@@ -81,6 +81,27 @@ changes require compatibility and directly affected public consumers. Release
 rehearsal remains `golib release dry-run --module .`. Report skipped, unavailable
 and failed boundaries; local checks are not hosted-CI or public-release proof.
 
+## Selected Weekly Assurance
+
+The owner-level [selected-assurance caller](.github/workflows/assurance.yml) is
+configured for main only, on Tuesdays at 04:07 UTC. Its single declared
+root-module fuzz target receives 30 seconds of active exploration per run.
+The selected target checks that successfully parsed binary envelopes re-encode
+byte-for-byte. It does not certify AES-GCM authentication, entropy, provider
+key handling, key zeroization, cloud KMS behavior or public-consumer compatibility;
+keep the affected crypto, provider, cancellation and secret-cleanup checks.
+
+Base-free ordinary checks execute deterministic seeds, not active exploration;
+committed-range CI selects affected active smoke. Manual assurance requires an
+exact anchored selector from the root fuzz operation in `.golib.yaml`, for
+example `^FuzzParseEnvelope$`. Empty, unknown and malformed selections refuse.
+The shared job bounds setup and execution to ten minutes, its native session
+to five minutes, active workers and CPU to two, owned memory to 2 GiB, native
+output to 1 MiB and private-cache lifetime. Failure, cancellation, exhausted
+budgets and cleanup refusal remain attributable failures. This lane does not
+run mutation or replace Required, original full fuzz budgets, explicit
+`make check-full`, nested/service contracts or relevant release qualification.
+
 ## Adding A Module
 
 Follow [repository structure policy](AGENTS.md#repository-structure). New modules

@@ -188,10 +188,13 @@ type operationError struct {
 	cause     error
 }
 
+// Error returns an operation label without the key reference or provider error text.
 func (err operationError) Error() string {
 	return "AWS KMS " + err.operation + " data key failed"
 }
 
+// Unwrap exposes the failure category and, when retained, a standard context
+// cancellation or deadline sentinel; it never exposes the original provider error.
 func (err operationError) Unwrap() []error {
 	if err.cause == nil {
 		return []error{err.kind}

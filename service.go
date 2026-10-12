@@ -337,10 +337,13 @@ type operationError struct {
 	cause     error
 }
 
+// Error returns an operation label without request data or provider error text.
 func (err operationError) Error() string {
 	return "secret envelope " + err.operation + " failed"
 }
 
+// Unwrap exposes the failure category and any retained standard context
+// cancellation or deadline sentinel, not the original provider error.
 func (err operationError) Unwrap() []error {
 	if err.cause == nil {
 		return []error{err.kind}

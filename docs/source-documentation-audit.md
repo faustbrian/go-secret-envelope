@@ -106,6 +106,14 @@ contracts. These are missing/underspecified prose, not behavioral defects.
   and interface methods and three canonical package comments, then confirmed
   every executable token identical to the base. This includes unchanged test,
   example, fuzz, benchmark and hosted diagnostic executable contents.
+- A subsequent shared strict check also covered exported methods on private
+  concrete error types returned through interfaces. Seven methods now document
+  their safe Error labels, category/context-only Unwrap exposure and signature
+  Format redaction; exact non-comment lines and the public snapshot are unchanged.
+  The subsequent native `docs check` accepted these structures but its online
+  link stage failed on an unchanged README GitHub URL with HTTP 503; this is
+  not a passing remote-link check. Earlier local-link validation remains
+  applicable to unchanged links.
 - Native `go doc -all` rendered `.`, `./adapters/awskms`, and
   `./adapters/keyring`; complete rendered contracts were inspected. Generated
   `api/baseline.txt` in that configured order using concatenated stdout trimmed

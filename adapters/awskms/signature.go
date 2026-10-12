@@ -209,10 +209,13 @@ type signatureOperationError struct {
 	cause error
 }
 
+// Error returns a fixed failure label without signature or provider error data.
 func (err signatureOperationError) Error() string {
 	return "AWS KMS signature verification failed"
 }
 
+// Unwrap exposes the failure category and any retained standard context
+// cancellation or deadline sentinel, not the original provider error.
 func (err signatureOperationError) Unwrap() []error {
 	if err.cause == nil {
 		return []error{err.kind}
@@ -221,6 +224,7 @@ func (err signatureOperationError) Unwrap() []error {
 	return []error{err.kind, err.cause}
 }
 
+// Format writes only the safe Error label for every verb and formatting flag.
 func (err signatureOperationError) Format(state fmt.State, _ rune) {
 	_, _ = io.WriteString(state, err.Error())
 }

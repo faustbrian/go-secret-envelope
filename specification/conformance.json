@@ -59,7 +59,7 @@
       "fuzz": [],
       "differential_evidence": [],
       "differential_classification": "not assessed",
-      "public_behavior": ["Every encryption uses a fresh data key and nonce and best-effort overwrites package-owned plaintext key slices."]
+      "public_behavior": ["Bundled providers generate fresh data keys, Service defaults nonce reads to crypto/rand and best-effort clears transferred plaintext key slices; custom providers and nonce readers must preserve freshness and uniqueness."]
     },
     {
       "id": "SECRETENVELOPE-DEC-007",

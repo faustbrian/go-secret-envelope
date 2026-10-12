@@ -84,8 +84,10 @@ authentication tag.
 
 The key reference is duplicated in the database as an operator-visible field
 when applications require rotation and custody audits. The encoded envelope
-keeps its own copy so moving ciphertext without its exact wrapping key is
-rejected.
+keeps its own copy so the provider can select and authenticate the exact
+wrapping key. `ParseEnvelope` validates framing only; metadata is not trusted
+until `Service.Decrypt` authenticates against the expected context. Applications
+must supply that expected identity independently of an untrusted stored row.
 
 ## Versioned keyring provider
 

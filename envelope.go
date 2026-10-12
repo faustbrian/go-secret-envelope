@@ -10,8 +10,11 @@ import (
 )
 
 const (
-	DataKeySize                  = 32
-	NonceSize                    = 12
+	// DataKeySize is the 32-byte AES-256 data-key length.
+	DataKeySize = 32
+	// NonceSize is the 12-byte GCM nonce length in the version 1 profile.
+	NonceSize = 12
+	// MaxPlaintextSize bounds Encrypt payloads to 4 MiB.
 	MaxPlaintextSize             = 4 << 20
 	maxKeyReferenceSize          = 2048
 	maxEncryptedDataKeySize      = 64 << 10
@@ -21,7 +24,9 @@ const (
 	algorithmAES256GCM      byte = 1
 	envelopeMagic                = "SEV1"
 	redacted                     = "[REDACTED]"
-	MaxEnvelopeSize              = envelopeHeaderSize +
+	// MaxEnvelopeSize bounds complete SEV1 binary input, including metadata,
+	// wrapped key, nonce and the 16-byte GCM tag. It is not a provider blob limit.
+	MaxEnvelopeSize = envelopeHeaderSize +
 		maxKeyReferenceSize +
 		maxEncryptedDataKeySize +
 		NonceSize +
@@ -29,9 +34,16 @@ const (
 		16
 )
 
+// ErrInvalidEnvelope reports malformed framing or invalid data-key material;
+// structural acceptance alone does not establish cryptographic authentication.
 var ErrInvalidEnvelope = errors.New("secret envelope is invalid")
 
-// Envelope is an immutable encrypted payload and wrapped data key.
+// Envelope is an immutable encrypted payload and wrapped data key, safe for
+// concurrent reads. Its zero value has no usable binary representation.
+// A parsed Envelope is only structurally admitted; Service.Decrypt authenticates
+// it against the expected Context and the provider's wrapping-key contract.
+// Text/Go-syntax/JSON/slog output is redacted; MarshalBinary exposes persistence
+// bytes deliberately, and KeyReference deliberately exposes non-secret routing.
 type Envelope struct {
 	keyReference     string
 	encryptedDataKey []byte
@@ -44,7 +56,8 @@ func (envelope Envelope) KeyReference() string {
 	return envelope.keyReference
 }
 
-// Ciphertext returns a caller-owned copy of the authenticated ciphertext.
+// Ciphertext returns a copy of the payload ciphertext and GCM tag. Calling it
+// does not authenticate a parsed envelope; the zero Envelope returns nil.
 func (envelope Envelope) Ciphertext() []byte {
 	return append([]byte(nil), envelope.ciphertext...)
 }
@@ -54,7 +67,10 @@ func (envelope Envelope) EncryptedDataKey() []byte {
 	return append([]byte(nil), envelope.encryptedDataKey...)
 }
 
-func (Envelope) String() string   { return redacted }
+// String returns [REDACTED], never encoded envelope bytes.
+func (Envelope) String() string { return redacted }
+
+// GoString redacts the Go-syntax representation, including key routing.
 func (Envelope) GoString() string { return redacted }
 
 // LogValue prevents envelope bytes and key references from entering slog.
@@ -62,12 +78,18 @@ func (Envelope) LogValue() slog.Value {
 	return slog.StringValue(redacted)
 }
 
-// MarshalJSON prevents accidental JSON disclosure of encrypted material.
+// MarshalJSON emits the JSON string "[REDACTED]". It is not a persistence
+// format; use MarshalBinary for deliberate envelope storage.
 func (Envelope) MarshalJSON() ([]byte, error) {
 	return json.Marshal(redacted)
 }
 
-// MarshalBinary returns the stable versioned persistence representation.
+// MarshalBinary returns a new SEV1 version 1, algorithm 1 byte slice: a
+// 17-byte big-endian-length header followed by key reference, wrapped key,
+// nonce and ciphertext/tag. Invalid or zero values return nil and
+// ErrInvalidEnvelope. This validates structure, not authenticity.
+// SECRETENVELOPE-DEC-002/004 own this private framing and its limits; see
+// TestEnvelopeAcceptsExactSizeLimits and FuzzParseEnvelope.
 func (envelope Envelope) MarshalBinary() ([]byte, error) {
 	if !envelope.valid() {
 		return nil, ErrInvalidEnvelope
@@ -97,7 +119,14 @@ func (envelope Envelope) MarshalBinary() ([]byte, error) {
 	return encoded, nil
 }
 
-// ParseEnvelope validates and copies a versioned persistence representation.
+// ParseEnvelope structurally validates and copies SEV1 version 1 bytes. It
+// rejects nil, truncation, trailing bytes, unsupported version/algorithm and
+// inconsistent or oversized fields with a zero Envelope and ErrInvalidEnvelope.
+// Key references are nonempty UTF-8 without controls (at most 2048 bytes);
+// wrapped keys are 1 through 65536 bytes, nonces exactly NonceSize, and
+// ciphertext/tag 16 through MaxPlaintextSize+16 bytes. Input is not retained.
+// Success does not authenticate: call Service.Decrypt with a trusted expected
+// Context before accepting the plaintext or interpreting metadata as trusted.
 func ParseEnvelope(encoded []byte) (Envelope, error) {
 	if len(encoded) < minimumEnvelopeSize ||
 		len(encoded) > MaxEnvelopeSize ||
@@ -107,6 +136,9 @@ func ParseEnvelope(encoded []byte) (Envelope, error) {
 		return Envelope{}, ErrInvalidEnvelope
 	}
 
+	// Compute the complete declared size in uint64 before slicing or copying.
+	// Header widths can represent much larger fields than this profile accepts
+	// (SECRETENVELOPE-DEC-004; TestEnvelopeRejectsInvalidFieldsAndEncodings).
 	keyReferenceSize := uint64(binary.BigEndian.Uint16(encoded[6:8]))
 	encryptedDataKeySize := uint64(binary.BigEndian.Uint32(encoded[8:12]))
 	nonceSize := uint64(encoded[12])

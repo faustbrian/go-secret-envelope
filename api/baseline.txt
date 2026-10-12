@@ -3,16 +3,36 @@ package secretenvelope // import "github.com/faustbrian/go-secret-envelope/v2"
 Package secretenvelope provides authenticated envelope encryption for
 application-owned secret payloads.
 
-Encryption contexts are non-secret associated data. They must use stable
-identifiers and field labels, never credentials or customer payloads.
+Start with NewContext and NewService using an explicit KeyProvider. Service
+uses AES-256-GCM with a 96-bit nonce and 128-bit tag; SEV1 framing and context
+serialization are repository-owned policies, not external wire standards.
+The primitive profile is recorded against FIPS 197 (updated May 2023) and NIST
+SP 800-38D (November 2007) in docs/specification-decisions.md. This does not
+assert FIPS validation or independent cryptographic conformance.
+
+Encryption contexts are non-secret associated data. They must use stable,
+trusted identifiers and field labels, never credentials or customer payloads.
+Applications own authorization, plaintext serialization, replay/rollback policy,
+persistence and key rotation. Parsing alone does not authenticate.
+
+Values are immutable except for transferred DataKey ownership. Service starts
+no background work and borrows its provider and entropy source; concurrent use
+depends on those collaborators. Data-key clearing is best effort under Go.
+There is no cgo or root-package cloud import; the optional AWS adapter shares
+this module's dependency graph and owns its injected SDK-client boundary.
 
 CONSTANTS
 
 const (
-	DataKeySize      = 32
-	NonceSize        = 12
+	// DataKeySize is the 32-byte AES-256 data-key length.
+	DataKeySize = 32
+	// NonceSize is the 12-byte GCM nonce length in the version 1 profile.
+	NonceSize = 12
+	// MaxPlaintextSize bounds Encrypt payloads to 4 MiB.
 	MaxPlaintextSize = 4 << 20
 
+	// MaxEnvelopeSize bounds complete SEV1 binary input, including metadata,
+	// wrapped key, nonce and the 16-byte GCM tag. It is not a provider blob limit.
 	MaxEnvelopeSize = envelopeHeaderSize +
 		maxKeyReferenceSize +
 		maxEncryptedDataKeySize +
@@ -24,27 +44,46 @@ const (
 VARIABLES
 
 var (
+	// ErrServiceRequired reports a nil/zero Service or missing provider/entropy dependency.
 	ErrServiceRequired = errors.New("secret envelope service is required")
-	ErrKeyProvider     = errors.New("secret envelope key provider failed")
-	ErrInvalidRequest  = errors.New("secret envelope request is invalid")
-	ErrEntropy         = errors.New("secret envelope nonce generation failed")
-	ErrAuthentication  = errors.New("secret envelope authentication failed")
+	// ErrKeyProvider classifies a provider failure; only safe context cancellation/deadline
+	// categories, not the provider cause, are retained in the error chain.
+	ErrKeyProvider = errors.New("secret envelope key provider failed")
+	// ErrInvalidRequest reports a nil context or invalid payload, reference, binding or option.
+	ErrInvalidRequest = errors.New("secret envelope request is invalid")
+	// ErrEntropy classifies nonce-read failure without preserving reader diagnostics.
+	ErrEntropy = errors.New("secret envelope nonce generation failed")
+	// ErrAuthentication reports failure to authenticate the payload ciphertext and context.
+	ErrAuthentication = errors.New("secret envelope authentication failed")
 )
 var ErrInvalidContext = errors.New("encryption context is invalid")
+    ErrInvalidContext reports an empty, malformed or oversized binding context.
+
 var ErrInvalidEnvelope = errors.New("secret envelope is invalid")
+    ErrInvalidEnvelope reports malformed framing or invalid data-key material;
+    structural acceptance alone does not establish cryptographic authentication.
+
 
 TYPES
 
 type Context struct {
 	// Has unexported fields.
 }
-    Context is immutable, canonical non-secret associated data.
+    Context is immutable, canonical non-secret associated data safe for
+    concurrent reads. Its zero value is invalid for cryptographic operations. It
+    does not establish trust or authorization for values supplied by the caller.
 
 func NewContext(values map[string]string) (Context, error)
-    NewContext validates and canonically orders non-secret associated data.
+    NewContext copies 1 through 32 UTF-8 entries with nonempty keys of at most
+    256 bytes, values of at most 1024 bytes (possibly empty), and a canonical
+    encoding of at most 16 KiB. Nil/empty input is invalid. Failure returns the
+    zero Context and ErrInvalidContext. Bytes remain case-sensitive and are
+    not Unicode-normalized; callers must not mutate the map while it is being
+    copied.
 
 func (encryptionContext Context) AdditionalData() []byte
-    AdditionalData returns a caller-owned canonical encoding.
+    AdditionalData returns a copy of the canonical sorted key/value bytes, each
+    preceded by its uint32 big-endian byte length. The zero Context returns nil.
 
 func (encryptionContext Context) Values() map[string]string
     Values returns a caller-owned copy for a key-provider API.
@@ -52,9 +91,13 @@ func (encryptionContext Context) Values() map[string]string
 type DataKey struct {
 	// Has unexported fields.
 }
-    DataKey owns wrapped and plaintext key bytes returned by a KeyProvider. Its
-    plaintext is not publicly accessible. Service zeroizes it after managed use;
-    direct provider callers cannot explicitly clear it and should use Service.
+    DataKey owns wrapped and plaintext key bytes returned by a KeyProvider.
+    Its plaintext is not publicly accessible. Service best-effort clears it
+    after use; direct provider callers cannot explicitly clear it and should
+    use Service. Copying DataKey shares its transferred byte storage, not
+    independent key ownership. Once transferred, callers must not mutate those
+    slices or reuse the key for another encryption. The zero DataKey is invalid
+    cryptographic material.
 
 func NewDataKey(
 	plaintext []byte,
@@ -62,12 +105,17 @@ func NewDataKey(
 	keyReference string,
 ) (DataKey, error)
     NewDataKey validates key-provider response bytes and, on success, transfers
-    ownership of them to the returned data key.
+    ownership of them to the returned data key, without copying or assessing
+    entropy quality. Plaintext must be DataKeySize bytes, wrapped bytes 1
+    through 65536 bytes, and the reference nonempty UTF-8 without controls,
+    at most 2048 bytes. Failure returns the zero DataKey and ErrInvalidEnvelope,
+    leaves inputs untouched, and leaves their cleanup to the caller.
 
 func (dataKey DataKey) EncryptedDataKey() []byte
     EncryptedDataKey returns a caller-owned copy of the wrapped key.
 
 func (DataKey) GoString() string
+    GoString redacts the Go-syntax representation of all key material.
 
 func (dataKey DataKey) KeyReference() string
     KeyReference identifies the wrapping key without exposing plaintext.
@@ -79,37 +127,65 @@ func (DataKey) MarshalJSON() ([]byte, error)
     MarshalJSON prevents accidental JSON disclosure of data-key material.
 
 func (DataKey) String() string
+    String returns [REDACTED], never key bytes.
 
 type DecryptRequest struct {
+	// Envelope is the structurally valid encrypted payload to authenticate.
 	Envelope Envelope
-	Context  Context
+	// Context is the trusted expected binding, not context copied from an
+	// untrusted record. It must match the encryption context exactly.
+	Context Context
 }
     DecryptRequest carries an immutable envelope and its expected immutable
     non-secret binding context.
 
 type EncryptRequest struct {
-	Plaintext    []byte
+	// Plaintext is 1 through MaxPlaintextSize bytes, borrowed for this call.
+	// Service does not retain, mutate or clear it; do not mutate concurrently.
+	Plaintext []byte
+	// KeyReference selects the provider wrapping key; it is nonempty UTF-8,
+	// without controls, at most 2048 bytes. Providers may impose stricter rules.
 	KeyReference string
-	Context      Context
+	// Context binds trusted non-secret record identity and purpose. Its zero
+	// value is invalid; values are authenticated, not encrypted.
+	Context Context
 }
     EncryptRequest carries caller-owned plaintext borrowed for one Encrypt call
-    and its immutable non-secret binding context.
+    and its immutable non-secret binding context. Unlike Envelope/DataKey,
+    this request has no redacting formatter: do not log or JSON-encode plaintext
+    requests.
 
 type Envelope struct {
 	// Has unexported fields.
 }
-    Envelope is an immutable encrypted payload and wrapped data key.
+    Envelope is an immutable encrypted payload and wrapped data key, safe for
+    concurrent reads. Its zero value has no usable binary representation. A
+    parsed Envelope is only structurally admitted; Service.Decrypt authenticates
+    it against the expected Context and the provider's wrapping-key contract.
+    Text/Go-syntax/JSON/slog output is redacted; MarshalBinary exposes
+    persistence bytes deliberately, and KeyReference deliberately exposes
+    non-secret routing.
 
 func ParseEnvelope(encoded []byte) (Envelope, error)
-    ParseEnvelope validates and copies a versioned persistence representation.
+    ParseEnvelope structurally validates and copies SEV1 version 1 bytes.
+    It rejects nil, truncation, trailing bytes, unsupported version/algorithm
+    and inconsistent or oversized fields with a zero Envelope and
+    ErrInvalidEnvelope. Key references are nonempty UTF-8 without controls (at
+    most 2048 bytes); wrapped keys are 1 through 65536 bytes, nonces exactly
+    NonceSize, and ciphertext/tag 16 through MaxPlaintextSize+16 bytes. Input
+    is not retained. Success does not authenticate: call Service.Decrypt with
+    a trusted expected Context before accepting the plaintext or interpreting
+    metadata as trusted.
 
 func (envelope Envelope) Ciphertext() []byte
-    Ciphertext returns a caller-owned copy of the authenticated ciphertext.
+    Ciphertext returns a copy of the payload ciphertext and GCM tag. Calling it
+    does not authenticate a parsed envelope; the zero Envelope returns nil.
 
 func (envelope Envelope) EncryptedDataKey() []byte
     EncryptedDataKey returns a caller-owned copy of the wrapped data key.
 
 func (Envelope) GoString() string
+    GoString redacts the Go-syntax representation, including key routing.
 
 func (envelope Envelope) KeyReference() string
     KeyReference identifies the wrapping key without exposing plaintext.
@@ -118,15 +194,29 @@ func (Envelope) LogValue() slog.Value
     LogValue prevents envelope bytes and key references from entering slog.
 
 func (envelope Envelope) MarshalBinary() ([]byte, error)
-    MarshalBinary returns the stable versioned persistence representation.
+    MarshalBinary returns a new SEV1 version 1, algorithm 1 byte slice:
+    a 17-byte big-endian-length header followed by key reference,
+    wrapped key, nonce and ciphertext/tag. Invalid or zero values return
+    nil and ErrInvalidEnvelope. This validates structure, not authenticity.
+    SECRETENVELOPE-DEC-002/004 own this private framing and its limits;
+    see TestEnvelopeAcceptsExactSizeLimits and FuzzParseEnvelope.
 
 func (Envelope) MarshalJSON() ([]byte, error)
-    MarshalJSON prevents accidental JSON disclosure of encrypted material.
+    MarshalJSON emits the JSON string "[REDACTED]". It is not a persistence
+    format; use MarshalBinary for deliberate envelope storage.
 
 func (Envelope) String() string
+    String returns [REDACTED], never encoded envelope bytes.
 
 type KeyProvider interface {
+	// GenerateDataKey returns a fresh unpredictable DataKey for one payload,
+	// wrapping it under the requested/resolved reference and binding Context.
+	// Success transfers exclusive key-byte ownership; failure returns no key
+	// and the provider must clear any secret bytes it created.
 	GenerateDataKey(context.Context, string, Context) (DataKey, error)
+	// DecryptDataKey authenticates wrapped bytes under the exact reference and
+	// Context, returning exactly DataKeySize owned plaintext bytes on success.
+	// Ciphertext is borrowed only for this call; failure returns no plaintext.
 	DecryptDataKey(context.Context, string, []byte, Context) ([]byte, error)
 }
     KeyProvider wraps and unwraps one-use AES-256 data keys. Its methods receive
@@ -138,24 +228,34 @@ type KeyProvider interface {
     provider that supports concurrent calls.
 
 type Option func(*serviceOptions) error
-    Option configures a Service without introducing ambient state.
+    Option configures NewService in call order without ambient state. Nil
+    options are invalid; options are applied only during construction.
 
 func WithNonceReader(reader io.Reader) Option
-    WithNonceReader replaces crypto/rand for deterministic tests. Service
-    retains the reader; callers must preserve nonce uniqueness, and concurrent
-    callers require a reader that supports concurrent use. Reads receive no
-    context and must return promptly: canceling the Encrypt context cannot
-    interrupt a blocked read. When repeated, the last option wins.
+    WithNonceReader replaces crypto/rand for deterministic tests.
+    Service retains the reader; callers must preserve nonce uniqueness,
+    and concurrent callers require a reader that supports concurrent use. Reads
+    receive no context and must return promptly: canceling the Encrypt context
+    cannot interrupt a blocked read. When repeated, the last option wins.
+    Nil or typed-nil readers return ErrInvalidRequest during construction.
+    This option does not copy, close or serialize the reader and does not make
+    deterministic entropy production-safe.
 
 type Service struct {
 	// Has unexported fields.
 }
     Service performs local AES-256-GCM operations around a key provider.
     It owns no external resources or background work. Concurrent use requires
-    the provider and nonce reader to support concurrent calls.
+    the provider and nonce reader to support concurrent calls. The zero Service
+    is not ready for use; there is no Close or destruction method. Callers own
+    provider/reader shutdown and plaintext payload cleanup. Collaborator panics
+    are not recovered by Service.
 
 func NewService(provider KeyProvider, options ...Option) (*Service, error)
-    NewService validates and retains explicit key and entropy dependencies.
+    NewService retains the provider and defaults nonce reads to
+    crypto/rand.Reader. Nil/typed-nil providers return nil and
+    ErrServiceRequired; invalid options return nil and their error. Construction
+    creates no external resources.
 
 func (service *Service) Decrypt(
 	ctx context.Context,
@@ -167,8 +267,11 @@ func (service *Service) Decrypt(
     ErrInvalidRequest, ErrInvalidEnvelope, or ErrAuthentication for those
     stable categories. Provider failures wrap ErrKeyProvider and retain only
     context cancellation or deadline categories. After the provider returns,
-    canceling ctx cannot interrupt local AES-GCM decryption. Concurrent calls
-    require concurrent-safe Service dependencies.
+    canceling ctx cannot interrupt local AES-GCM decryption. Failure returns
+    nil plaintext. Successful plaintext is not cleared by Service: its lifecycle
+    belongs to the caller. A structurally admitted tag-only ciphertext may
+    authenticate an empty payload even though Encrypt rejects empty plaintext.
+    Concurrent calls require concurrent-safe dependencies.
 
 func (service *Service) Encrypt(
 	ctx context.Context,
@@ -181,7 +284,12 @@ func (service *Service) Encrypt(
     for those stable categories. Provider failures wrap ErrKeyProvider and
     retain only context cancellation or deadline categories. After the provider
     returns, canceling ctx cannot interrupt the nonce read or local AES-GCM
-    encryption. Concurrent calls require concurrent-safe Service dependencies.
+    encryption. Failure returns a zero Envelope, never partial ciphertext.
+    Plaintext is nonempty; the Envelope owns ciphertext, nonce and copied
+    wrapped-key bytes. Context is authenticated but not stored in the envelope.
+    The provider must supply a fresh key and authenticate wrapping metadata;
+    Service cannot verify provider entropy quality, replay policy or caller
+    authorization. Concurrent calls require concurrent-safe dependencies.
 
 package awskms // import "github.com/faustbrian/go-secret-envelope/v2/adapters/awskms"
 
@@ -189,15 +297,31 @@ Package awskms adapts AWS KMS data-key operations to secret-envelope key
 wrapping and authenticates bounded externally signed raw statements with
 asymmetric KMS keys.
 
-Encryption context values are visible to AWS and CloudTrail. They must remain
-non-secret.
+Encryption context values are visible to AWS and CloudTrail. They must
+remain non-secret. Start with New for a KeyProvider or NewSignatureVerifier
+for verify-only statements. Clients are borrowed; callers own credentials,
+transport, retries, deadlines, concurrent-call safety and shutdown. The package
+starts no background work and introduces the AWS SDK, but no cgo.
+
+The request model is pinned to service/kms v1.61.3 at
+c88f24ba4a32e01258202d54f33bc67598b9e041; fixed selections and
+exact-response checks are SECRETENVELOPE-DEC-007 through -010 in
+docs/specification-decisions.md. Synthetic SDK tests do not claim live AWS or
+independent signature conformance. Applications own trusted context, statement
+canonicalization, key-to-role authorization and replay policy; successful KMS
+verification does not own them.
 
 VARIABLES
 
 var (
-	ErrClientRequired  = errors.New("AWS KMS client is required")
-	ErrInvalidRequest  = errors.New("AWS KMS data-key request is invalid")
-	ErrKMS             = errors.New("AWS KMS data-key operation failed")
+	// ErrClientRequired reports a nil/typed-nil client or an unusable Provider.
+	ErrClientRequired = errors.New("AWS KMS client is required")
+	// ErrInvalidRequest reports invalid data-key inputs before client invocation.
+	ErrInvalidRequest = errors.New("AWS KMS data-key request is invalid")
+	// ErrKMS classifies an operational data-key client failure, retaining only
+	// safe context cancellation/deadline identity instead of the client cause.
+	ErrKMS = errors.New("AWS KMS data-key operation failed")
+	// ErrInvalidResponse reports absent or invalid successful data-key response material.
 	ErrInvalidResponse = errors.New("AWS KMS data-key response is invalid")
 )
 var (
@@ -228,11 +352,15 @@ var (
 TYPES
 
 type Client interface {
+	// GenerateDataKey honors ctx and transfers successful output byte ownership
+	// to the adapter; it must not retain mutable aliases to returned key bytes.
 	GenerateDataKey(
 		context.Context,
 		*kms.GenerateDataKeyInput,
 		...func(*kms.Options),
 	) (*kms.GenerateDataKeyOutput, error)
+	// Decrypt honors ctx and transfers successful plaintext ownership. If an
+	// error accompanies a response, the client owns cleanup of that response.
 	Decrypt(
 		context.Context,
 		*kms.DecryptInput,
@@ -247,11 +375,14 @@ type Client interface {
 type Provider struct {
 	// Has unexported fields.
 }
-    Provider wraps one-use AES-256 data keys with a symmetric KMS key. It owns
-    no client resources or background work.
+    Provider wraps one-use AES-256 data keys with a symmetric KMS key.
+    It owns no client resources or background work. Concurrent calls require
+    a concurrent-safe client. Nil/zero Providers return ErrClientRequired;
+    no Close method is provided.
 
 func New(client Client) (*Provider, error)
-    New validates the explicit KMS client.
+    New borrows a non-nil KMS client, rejecting nil/typed-nil with nil and
+    ErrClientRequired. It performs no network or credential discovery.
 
 func (provider *Provider) DecryptDataKey(
 	ctx context.Context,
@@ -261,7 +392,15 @@ func (provider *Provider) DecryptDataKey(
 ) ([]byte, error)
     DecryptDataKey unwraps one data key with its exact key and context.
     It rejects key references and ciphertext blobs larger than AWS KMS request
-    limits before copying or I/O.
+    limits before copying or I/O. Requires non-nil ctx, a nonempty reference
+    of at most 2048 bytes, 1 through 6144 wrapped bytes and a valid Context.
+    It copies ciphertext before the client call and fixes SYMMETRIC_DEFAULT.
+    Success transfers exactly 32 plaintext bytes only when output KeyId matches
+    the requested reference and output algorithm matches. Invalid successful
+    output is cleared and rejected; errors return nil with ErrClientRequired,
+    ErrInvalidRequest, ErrInvalidResponse, or an error wrapping ErrKMS and only
+    safe context causes. Clear returned key bytes after use. No deadline or
+    retry is added by the adapter.
 
 func (provider *Provider) GenerateDataKey(
 	ctx context.Context,
@@ -269,9 +408,20 @@ func (provider *Provider) GenerateDataKey(
 	encryptionContext secretenvelope.Context,
 ) (secretenvelope.DataKey, error)
     GenerateDataKey asks KMS for a fresh AES-256 key and its wrapped copy.
-    It rejects key references larger than the AWS KMS request limit before I/O.
+    It requires a non-nil ctx, nonempty reference of at most 2048 bytes,
+    and a valid Context before client I/O. It fixes KeySpec to AES_256 and
+    passes exact context values. On success it transfers validated output bytes
+    without copying and retains the resolved response KeyId, which may differ
+    from an input alias. Invalid successful responses have plaintext cleared and
+    return a zero DataKey with ErrInvalidResponse; client errors wrap ErrKMS and
+    only safe context causes. Direct generated keys have no destruction method;
+    prefer managed Service use. Deadlines, cancellation and retries depend on
+    ctx/the injected client.
 
 type SignatureClient interface {
+	// Verify returns the verification result for the exact supplied RAW message,
+	// signature, key and algorithm. Successful output must identify that key and
+	// algorithm; the adapter checks both rather than trusting transport success.
 	Verify(
 		context.Context,
 		*kms.VerifyInput,
@@ -280,21 +430,27 @@ type SignatureClient interface {
 }
     SignatureClient is the least-privilege AWS KMS surface used to authenticate
     an externally signed statement. SignatureVerifier borrows the client and
-    inherits its concurrency guarantees.
+    inherits its concurrency guarantees. It must honor caller context; client
+    configuration owns network deadlines, retries and response-body cleanup.
 
 type SignatureVerifier struct {
 	// Has unexported fields.
 }
     SignatureVerifier authenticates bounded raw messages with one explicitly
-    reviewed asymmetric KMS signing algorithm. It never signs messages and owns
-    no client resources or background work.
+    reviewed asymmetric KMS signing algorithm. It never signs messages and
+    owns no client resources or background work. Its zero value is invalid,
+    and concurrent Verify calls require a concurrent-safe client. There is no
+    Close or resource destruction operation.
 
 func NewSignatureVerifier(
 	client SignatureClient,
 	algorithm types.SigningAlgorithmSpec,
 ) (*SignatureVerifier, error)
     NewSignatureVerifier validates the KMS client and fixes the accepted
-    algorithm for the verifier's lifetime.
+    algorithm for the verifier's lifetime. Accepted choices are RSASSA-PSS
+    SHA-256/384/512, ECDSA SHA-256/384/512, and ED25519_SHA_512 in RAW mode.
+    Nil/typed-nil clients and all other algorithms return nil with
+    ErrInvalidSignatureVerifier. Construction performs no I/O or key discovery.
 
 func (verifier *SignatureVerifier) Verify(
 	ctx context.Context,
@@ -304,19 +460,47 @@ func (verifier *SignatureVerifier) Verify(
 ) error
     Verify authenticates one exact raw message. The method owns copies of caller
     bytes before invoking KMS and returns stable, secret-safe failure classes.
+    KeyReference must be a nonempty KMS key-ARN-shaped UTF-8 string (no controls
+    or surrounding whitespace), at most 2048 bytes; aliases are rejected.
+    Message is 1 through 4096 raw bytes, signature 1 through 1024 bytes,
+    and ctx is non-nil. Inputs are borrowed while copying; do not mutate them
+    concurrently.
+
+    Already-canceled ctx returns ctx.Err() without I/O. Client failures wrap
+    ErrKMSSignatureVerification, except KMSInvalidSignatureException wraps
+    ErrSignatureRejected; only safe context cancellation/deadline causes
+    survive. A false response is ErrSignatureRejected; nil, wrong-key or
+    wrong-algorithm successful responses are ErrInvalidSignatureResponse.
+    No retry/deadline is added. Success means KMS confirmed these exact bytes,
+    not signer authorization, statement canonicalization, freshness or replay
+    prevention.
 
 package keyring // import "github.com/faustbrian/go-secret-envelope/v2/adapters/keyring"
 
 Package keyring wraps envelope data keys with versioned AES-256 keys that are
-supplied by the application's secret-delivery boundary.
+supplied by the application's secret-delivery boundary. Start with New and
+pass its Provider to secretenvelope.NewService for managed data-key use. The
+adapter requires no cgo, cloud client or service and starts no background work.
+It owns copied in-process keys, not secret retrieval or rotation policy.
+
+AES-256-GCM uses the fixed NIST SP 800-38D (November 2007) profile; the wrapped
+key bytes and reference/context binding are repository-owned version 1 policy
+(SECRETENVELOPE-DEC-001/005 in docs/specification-decisions.md), not a standard
+key-wrap format or FIPS-validation claim. Keys remain until runtime reclamation;
+no destruction method or complete erasure guarantee exists.
 
 VARIABLES
 
 var (
+	// ErrInvalidKeyring reports invalid construction or an unusable nil/zero Provider.
 	ErrInvalidKeyring = errors.New("keyring configuration is invalid")
+	// ErrInvalidRequest reports missing context or an invalid reference/binding.
 	ErrInvalidRequest = errors.New("keyring data-key request is invalid")
-	ErrKeyNotFound    = errors.New("keyring key reference is unavailable")
-	ErrEntropy        = errors.New("keyring entropy failed")
+	// ErrKeyNotFound reports a reference absent from the immutable keyring; no fallback occurs.
+	ErrKeyNotFound = errors.New("keyring key reference is unavailable")
+	// ErrEntropy reports data-key or nonce-read failure without retaining the reader cause.
+	ErrEntropy = errors.New("keyring entropy failed")
+	// ErrAuthentication reports malformed wrapped bytes or failed GCM authentication.
 	ErrAuthentication = errors.New("keyring data-key authentication failed")
 )
 
@@ -328,11 +512,19 @@ type Provider struct {
     Provider wraps fresh envelope data keys with an immutable versioned keyring.
     It is safe for concurrent use. Keys remain in process memory for the
     provider's lifetime and are never included in text, JSON, or slog output.
+    Its zero value is unusable. The provider starts no background work and has
+    no Close/destruction method; wrapping keys and transient AES-expanded copies
+    are not guaranteed to be erased by runtime reclamation.
 
 func New(keys map[string][]byte) (*Provider, error)
     New validates and copies a non-empty keyring. Each value must contain
     exactly 32 bytes and each stable reference must remain available while
-    ciphertext bearing that reference can still be read.
+    ciphertext bearing that reference can still be read. Accepts 1 through 32
+    entries with nonempty UTF-8 references of at most 2048 bytes, no controls
+    or surrounding whitespace. Failure returns nil and ErrInvalidKeyring. Input
+    bytes are not cleared; callers own cleanup and must supply unpredictable
+    keys. Construction does not test key strength or fetch/rotate secret
+    material.
 
 func (provider *Provider) DecryptDataKey(
 	ctx context.Context,
@@ -341,7 +533,13 @@ func (provider *Provider) DecryptDataKey(
 	encryptionContext secretenvelope.Context,
 ) ([]byte, error)
     DecryptDataKey authenticates and unwraps a data key with the exact retained
-    key reference and canonical encryption context.
+    key reference and canonical encryption context. Input is borrowed,
+    not mutated/retained; successful plaintext is caller-owned and must be
+    cleared after use. The private encoding is exactly 61 bytes: version 1,
+    12-byte nonce, 32 encrypted key bytes and a 16-byte tag. Malformed/tampered
+    bytes return nil and ErrAuthentication; request/configuration failures
+    match GenerateDataKey. Cancellation is checked only before bounded local
+    cryptographic work.
 
 func (provider *Provider) GenerateDataKey(
 	ctx context.Context,
@@ -349,9 +547,15 @@ func (provider *Provider) GenerateDataKey(
 	encryptionContext secretenvelope.Context,
 ) (secretenvelope.DataKey, error)
     GenerateDataKey creates a fresh data key and wraps it under the requested
-    versioned key reference with the canonical encryption context as AAD.
+    versioned key reference and canonical Context as AAD. Success transfers
+    the new plaintext/wrapped slices in a DataKey; use Service to clear its
+    private plaintext after managed use. Failure returns a zero DataKey
+    with ErrInvalidKeyring, ErrInvalidRequest, ErrKeyNotFound, ErrEntropy,
+    or ctx.Err(). Cancellation is checked before local work; entropy reads and
+    AES-GCM are not interruptible, and no retry or deadline is added.
 
 func (*Provider) GoString() string
+    GoString redacts the Go-syntax representation, including all wrapping keys.
 
 func (*Provider) LogValue() slog.Value
     LogValue prevents wrapping keys from entering structured logs.
@@ -360,3 +564,4 @@ func (*Provider) MarshalJSON() ([]byte, error)
     MarshalJSON prevents wrapping keys from entering JSON output.
 
 func (*Provider) String() string
+    String returns [REDACTED] even for a nil Provider.

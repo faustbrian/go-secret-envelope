@@ -14,23 +14,35 @@ import (
 )
 
 var (
+	// ErrServiceRequired reports a nil/zero Service or missing provider/entropy dependency.
 	ErrServiceRequired = errors.New("secret envelope service is required")
-	ErrKeyProvider     = errors.New("secret envelope key provider failed")
-	ErrInvalidRequest  = errors.New("secret envelope request is invalid")
-	ErrEntropy         = errors.New("secret envelope nonce generation failed")
-	ErrAuthentication  = errors.New("secret envelope authentication failed")
+	// ErrKeyProvider classifies a provider failure; only safe context cancellation/deadline
+	// categories, not the provider cause, are retained in the error chain.
+	ErrKeyProvider = errors.New("secret envelope key provider failed")
+	// ErrInvalidRequest reports a nil context or invalid payload, reference, binding or option.
+	ErrInvalidRequest = errors.New("secret envelope request is invalid")
+	// ErrEntropy classifies nonce-read failure without preserving reader diagnostics.
+	ErrEntropy = errors.New("secret envelope nonce generation failed")
+	// ErrAuthentication reports failure to authenticate the payload ciphertext and context.
+	ErrAuthentication = errors.New("secret envelope authentication failed")
 )
 
 // DataKey owns wrapped and plaintext key bytes returned by a KeyProvider. Its
-// plaintext is not publicly accessible. Service zeroizes it after managed use;
+// plaintext is not publicly accessible. Service best-effort clears it after use;
 // direct provider callers cannot explicitly clear it and should use Service.
+// Copying DataKey shares its transferred byte storage, not independent key
+// ownership. Once transferred, callers must not mutate those slices or reuse the
+// key for another encryption. The zero DataKey is invalid cryptographic material.
 type DataKey struct {
 	plaintext    []byte
 	ciphertext   []byte
 	keyReference string
 }
 
-func (DataKey) String() string   { return redacted }
+// String returns [REDACTED], never key bytes.
+func (DataKey) String() string { return redacted }
+
+// GoString redacts the Go-syntax representation of all key material.
 func (DataKey) GoString() string { return redacted }
 
 // LogValue prevents data-key material from entering slog.
@@ -44,7 +56,11 @@ func (DataKey) MarshalJSON() ([]byte, error) {
 }
 
 // NewDataKey validates key-provider response bytes and, on success, transfers
-// ownership of them to the returned data key.
+// ownership of them to the returned data key, without copying or assessing
+// entropy quality. Plaintext must be DataKeySize bytes, wrapped bytes 1 through
+// 65536 bytes, and the reference nonempty UTF-8 without controls, at most 2048
+// bytes. Failure returns the zero DataKey and ErrInvalidEnvelope, leaves inputs
+// untouched, and leaves their cleanup to the caller.
 func NewDataKey(
 	plaintext []byte,
 	ciphertext []byte,
@@ -82,37 +98,57 @@ func (dataKey DataKey) EncryptedDataKey() []byte {
 // with ErrKeyProvider. Concurrent Service use requires a provider that supports
 // concurrent calls.
 type KeyProvider interface {
+	// GenerateDataKey returns a fresh unpredictable DataKey for one payload,
+	// wrapping it under the requested/resolved reference and binding Context.
+	// Success transfers exclusive key-byte ownership; failure returns no key
+	// and the provider must clear any secret bytes it created.
 	GenerateDataKey(context.Context, string, Context) (DataKey, error)
+	// DecryptDataKey authenticates wrapped bytes under the exact reference and
+	// Context, returning exactly DataKeySize owned plaintext bytes on success.
+	// Ciphertext is borrowed only for this call; failure returns no plaintext.
 	DecryptDataKey(context.Context, string, []byte, Context) ([]byte, error)
 }
 
 // EncryptRequest carries caller-owned plaintext borrowed for one Encrypt call
-// and its immutable non-secret binding context.
+// and its immutable non-secret binding context. Unlike Envelope/DataKey, this
+// request has no redacting formatter: do not log or JSON-encode plaintext requests.
 type EncryptRequest struct {
-	Plaintext    []byte
+	// Plaintext is 1 through MaxPlaintextSize bytes, borrowed for this call.
+	// Service does not retain, mutate or clear it; do not mutate concurrently.
+	Plaintext []byte
+	// KeyReference selects the provider wrapping key; it is nonempty UTF-8,
+	// without controls, at most 2048 bytes. Providers may impose stricter rules.
 	KeyReference string
-	Context      Context
+	// Context binds trusted non-secret record identity and purpose. Its zero
+	// value is invalid; values are authenticated, not encrypted.
+	Context Context
 }
 
 // DecryptRequest carries an immutable envelope and its expected immutable
 // non-secret binding context.
 type DecryptRequest struct {
+	// Envelope is the structurally valid encrypted payload to authenticate.
 	Envelope Envelope
-	Context  Context
+	// Context is the trusted expected binding, not context copied from an
+	// untrusted record. It must match the encryption context exactly.
+	Context Context
 }
 
 type serviceOptions struct {
 	nonceReader io.Reader
 }
 
-// Option configures a Service without introducing ambient state.
+// Option configures NewService in call order without ambient state. Nil options
+// are invalid; options are applied only during construction.
 type Option func(*serviceOptions) error
 
 // WithNonceReader replaces crypto/rand for deterministic tests. Service retains
 // the reader; callers must preserve nonce uniqueness, and concurrent callers
 // require a reader that supports concurrent use. Reads receive no context and
 // must return promptly: canceling the Encrypt context cannot interrupt a
-// blocked read. When repeated, the last option wins.
+// blocked read. When repeated, the last option wins. Nil or typed-nil readers
+// return ErrInvalidRequest during construction. This option does not copy, close
+// or serialize the reader and does not make deterministic entropy production-safe.
 func WithNonceReader(reader io.Reader) Option {
 	return func(options *serviceOptions) error {
 		if nilLike(reader) {
@@ -126,13 +162,18 @@ func WithNonceReader(reader io.Reader) Option {
 
 // Service performs local AES-256-GCM operations around a key provider. It owns
 // no external resources or background work. Concurrent use requires the
-// provider and nonce reader to support concurrent calls.
+// provider and nonce reader to support concurrent calls. The zero Service is
+// not ready for use; there is no Close or destruction method. Callers own
+// provider/reader shutdown and plaintext payload cleanup. Collaborator panics
+// are not recovered by Service.
 type Service struct {
 	provider    KeyProvider
 	nonceReader io.Reader
 }
 
-// NewService validates and retains explicit key and entropy dependencies.
+// NewService retains the provider and defaults nonce reads to crypto/rand.Reader.
+// Nil/typed-nil providers return nil and ErrServiceRequired; invalid options
+// return nil and their error. Construction creates no external resources.
 func NewService(provider KeyProvider, options ...Option) (*Service, error) {
 	if nilLike(provider) {
 		return nil, ErrServiceRequired
@@ -160,8 +201,12 @@ func NewService(provider KeyProvider, options ...Option) (*Service, error) {
 // those stable categories. Provider failures wrap ErrKeyProvider and retain only
 // context cancellation or deadline categories. After the provider returns,
 // canceling ctx cannot interrupt the nonce read or local AES-GCM encryption.
-// Concurrent calls require
-// concurrent-safe Service dependencies.
+// Failure returns a zero Envelope, never partial ciphertext. Plaintext is
+// nonempty; the Envelope owns ciphertext, nonce and copied wrapped-key bytes.
+// Context is authenticated but not stored in the envelope. The
+// provider must supply a fresh key and authenticate wrapping metadata; Service
+// cannot verify provider entropy quality, replay policy or caller authorization.
+// Concurrent calls require concurrent-safe dependencies.
 func (service *Service) Encrypt(
 	ctx context.Context,
 	request EncryptRequest,
@@ -191,6 +236,10 @@ func (service *Service) Encrypt(
 			cause:     safeErrorCause(err),
 		}
 	}
+	// Clear the successfully transferred key on every later exit, including
+	// invalid provider material and nonce failure (SECRETENVELOPE-DEC-006;
+	// TestServiceRejectsInvalidKeyMaterialAndEntropy). Provider error paths
+	// retain provider cleanup ownership instead.
 	defer zero(dataKey.plaintext)
 	if len(dataKey.plaintext) != DataKeySize ||
 		len(dataKey.ciphertext) == 0 ||
@@ -199,6 +248,10 @@ func (service *Service) Encrypt(
 		return Envelope{}, ErrInvalidEnvelope
 	}
 
+	// The length checks fix AES-256, a 96-bit nonce and the default 128-bit GCM
+	// tag without negotiation (NIST SP 800-38D, November 2007, sections 5.2/8;
+	// FIPS 197, updated May 2023; SECRETENVELOPE-DEC-001). AAD is the canonical
+	// context; reference/wrapped-key authentication belongs to KeyProvider.
 	block, _ := aes.NewCipher(dataKey.plaintext)
 	authenticatedCipher, _ := cipher.NewGCM(block)
 	nonce := make([]byte, NonceSize)
@@ -230,7 +283,10 @@ func (service *Service) Encrypt(
 // categories. Provider failures wrap ErrKeyProvider and retain only context
 // cancellation or deadline categories.
 // After the provider returns, canceling ctx cannot interrupt local AES-GCM
-// decryption. Concurrent calls require concurrent-safe Service dependencies.
+// decryption. Failure returns nil plaintext. Successful plaintext is not cleared
+// by Service: its lifecycle belongs to the caller. A structurally admitted
+// tag-only ciphertext may authenticate an empty payload even though Encrypt
+// rejects empty plaintext. Concurrent calls require concurrent-safe dependencies.
 func (service *Service) Decrypt(
 	ctx context.Context,
 	request DecryptRequest,
@@ -293,6 +349,9 @@ func (err operationError) Unwrap() []error {
 	return []error{err.kind, err.cause}
 }
 
+// Retain canonical context categories, not provider errors that may carry
+// secret request data. SECRETENVELOPE-DEC-006 and
+// TestServicePreservesOnlySafeProviderCancellation protect this error boundary.
 func safeErrorCause(err error) error {
 	switch {
 	case errors.Is(err, context.Canceled):
@@ -304,6 +363,10 @@ func safeErrorCause(err error) error {
 	}
 }
 
+// Overwriting this slice narrows ordinary key lifetime, but does not erase
+// expanded cipher keys, compiler/runtime copies or caller-retained aliases.
+// This is best-effort cleanup, not a secure-memory guarantee (SE-RISK-003 in
+// docs/security.md and SECRETENVELOPE-DEC-006).
 func zero(value []byte) {
 	for index := range value {
 		value[index] = 0

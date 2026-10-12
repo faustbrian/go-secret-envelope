@@ -5,6 +5,9 @@ import (
 	"testing"
 )
 
+// FuzzParseEnvelope admits arbitrary persistence bytes and requires every
+// structurally accepted encoding to round-trip byte-for-byte. This does not
+// verify GCM authentication, key entropy, providers or plaintext cleanup.
 func FuzzParseEnvelope(f *testing.F) {
 	encoded, err := validTestEnvelope().MarshalBinary()
 	if err != nil {

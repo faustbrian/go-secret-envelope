@@ -6,6 +6,10 @@ import (
 	"testing"
 )
 
+// BenchmarkServiceRoundTrip measures one 1 KiB Encrypt/Decrypt pair, including
+// Service construction, copied key material and best-effort key clearing.
+// Context/payload setup is excluded; the recording provider and fixed nonce
+// omit keyring/KMS, entropy, transport, retries and persistence workloads.
 func BenchmarkServiceRoundTrip(b *testing.B) {
 	provider := &recordingProvider{
 		plaintextKey: bytes.Repeat([]byte{0x42}, DataKeySize),

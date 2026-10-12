@@ -48,8 +48,12 @@ var (
 
 // SignatureClient is the least-privilege AWS KMS surface used to authenticate
 // an externally signed statement. SignatureVerifier borrows the client and
-// inherits its concurrency guarantees.
+// inherits its concurrency guarantees. It must honor caller context; client
+// configuration owns network deadlines, retries and response-body cleanup.
 type SignatureClient interface {
+	// Verify returns the verification result for the exact supplied RAW message,
+	// signature, key and algorithm. Successful output must identify that key and
+	// algorithm; the adapter checks both rather than trusting transport success.
 	Verify(
 		context.Context,
 		*kms.VerifyInput,
@@ -59,14 +63,19 @@ type SignatureClient interface {
 
 // SignatureVerifier authenticates bounded raw messages with one explicitly
 // reviewed asymmetric KMS signing algorithm. It never signs messages and owns
-// no client resources or background work.
+// no client resources or background work. Its zero value is invalid, and
+// concurrent Verify calls require a concurrent-safe client. There is no Close
+// or resource destruction operation.
 type SignatureVerifier struct {
 	client    SignatureClient
 	algorithm types.SigningAlgorithmSpec
 }
 
 // NewSignatureVerifier validates the KMS client and fixes the accepted
-// algorithm for the verifier's lifetime.
+// algorithm for the verifier's lifetime. Accepted choices are RSASSA-PSS
+// SHA-256/384/512, ECDSA SHA-256/384/512, and ED25519_SHA_512 in RAW mode.
+// Nil/typed-nil clients and all other algorithms return nil with
+// ErrInvalidSignatureVerifier. Construction performs no I/O or key discovery.
 func NewSignatureVerifier(
 	client SignatureClient,
 	algorithm types.SigningAlgorithmSpec,
@@ -80,6 +89,18 @@ func NewSignatureVerifier(
 
 // Verify authenticates one exact raw message. The method owns copies of caller
 // bytes before invoking KMS and returns stable, secret-safe failure classes.
+// KeyReference must be a nonempty KMS key-ARN-shaped UTF-8 string (no controls
+// or surrounding whitespace), at most 2048 bytes; aliases are rejected. Message
+// is 1 through 4096 raw bytes, signature 1 through 1024 bytes, and ctx is non-nil.
+// Inputs are borrowed while copying; do not mutate them concurrently.
+//
+// Already-canceled ctx returns ctx.Err() without I/O. Client failures wrap
+// ErrKMSSignatureVerification, except KMSInvalidSignatureException wraps
+// ErrSignatureRejected; only safe context cancellation/deadline causes survive.
+// A false response is ErrSignatureRejected; nil, wrong-key or wrong-algorithm
+// successful responses are ErrInvalidSignatureResponse. No retry/deadline is
+// added. Success means KMS confirmed these exact bytes, not signer authorization,
+// statement canonicalization, freshness or replay prevention.
 func (verifier *SignatureVerifier) Verify(
 	ctx context.Context,
 	keyReference string,
@@ -118,6 +139,9 @@ func (verifier *SignatureVerifier) Verify(
 			cause: safeProviderCause(err),
 		}
 	}
+	// Transport success is not authentication. Require a positive result and
+	// exact key/algorithm identity (SECRETENVELOPE-DEC-010;
+	// TestSignatureVerifierClassifiesFailuresWithoutRenderingCauses).
 	if output == nil {
 		return ErrInvalidSignatureResponse
 	}
@@ -132,6 +156,9 @@ func (verifier *SignatureVerifier) Verify(
 	return nil
 }
 
+// This allowlist is owned policy, not every value in the pinned SDK enum.
+// Extending it needs attributable scheme review (SECRETENVELOPE-DEC-009;
+// TestSignatureVerifierAcceptsReviewedRawAlgorithms).
 func validRawSignatureAlgorithm(
 	algorithm types.SigningAlgorithmSpec,
 ) bool {

@@ -17,9 +17,14 @@ const (
 )
 
 var (
-	ErrClientRequired  = errors.New("AWS KMS client is required")
-	ErrInvalidRequest  = errors.New("AWS KMS data-key request is invalid")
-	ErrKMS             = errors.New("AWS KMS data-key operation failed")
+	// ErrClientRequired reports a nil/typed-nil client or an unusable Provider.
+	ErrClientRequired = errors.New("AWS KMS client is required")
+	// ErrInvalidRequest reports invalid data-key inputs before client invocation.
+	ErrInvalidRequest = errors.New("AWS KMS data-key request is invalid")
+	// ErrKMS classifies an operational data-key client failure, retaining only
+	// safe context cancellation/deadline identity instead of the client cause.
+	ErrKMS = errors.New("AWS KMS data-key operation failed")
+	// ErrInvalidResponse reports absent or invalid successful data-key response material.
 	ErrInvalidResponse = errors.New("AWS KMS data-key response is invalid")
 )
 
@@ -28,11 +33,15 @@ var (
 // client method returns an error, the client retains responsibility for any
 // response and secret bytes; Provider does not inspect error responses.
 type Client interface {
+	// GenerateDataKey honors ctx and transfers successful output byte ownership
+	// to the adapter; it must not retain mutable aliases to returned key bytes.
 	GenerateDataKey(
 		context.Context,
 		*kms.GenerateDataKeyInput,
 		...func(*kms.Options),
 	) (*kms.GenerateDataKeyOutput, error)
+	// Decrypt honors ctx and transfers successful plaintext ownership. If an
+	// error accompanies a response, the client owns cleanup of that response.
 	Decrypt(
 		context.Context,
 		*kms.DecryptInput,
@@ -41,12 +50,14 @@ type Client interface {
 }
 
 // Provider wraps one-use AES-256 data keys with a symmetric KMS key. It owns no
-// client resources or background work.
+// client resources or background work. Concurrent calls require a concurrent-safe
+// client. Nil/zero Providers return ErrClientRequired; no Close method is provided.
 type Provider struct {
 	client Client
 }
 
-// New validates the explicit KMS client.
+// New borrows a non-nil KMS client, rejecting nil/typed-nil with nil and
+// ErrClientRequired. It performs no network or credential discovery.
 func New(client Client) (*Provider, error) {
 	if nilLike(client) {
 		return nil, ErrClientRequired
@@ -56,7 +67,14 @@ func New(client Client) (*Provider, error) {
 }
 
 // GenerateDataKey asks KMS for a fresh AES-256 key and its wrapped copy. It
-// rejects key references larger than the AWS KMS request limit before I/O.
+// requires a non-nil ctx, nonempty reference of at most 2048 bytes, and a valid
+// Context before client I/O. It fixes KeySpec to AES_256 and passes exact context
+// values. On success it transfers validated output bytes without copying and
+// retains the resolved response KeyId, which may differ from an input alias.
+// Invalid successful responses have plaintext cleared and return a zero DataKey
+// with ErrInvalidResponse; client errors wrap ErrKMS and only safe context causes.
+// Direct generated keys have no destruction method; prefer managed Service use.
+// Deadlines, cancellation and retries depend on ctx/the injected client.
 func (provider *Provider) GenerateDataKey(
 	ctx context.Context,
 	keyReference string,
@@ -89,6 +107,9 @@ func (provider *Provider) GenerateDataKey(
 		return secretenvelope.DataKey{}, ErrInvalidResponse
 	}
 
+	// Persist the resolved key, not a mutable alias (SECRETENVELOPE-DEC-008;
+	// TestProviderGeneratesAnAES256DataKey). Successful output slices transfer
+	// to DataKey; error responses retain client cleanup ownership.
 	dataKey, err := secretenvelope.NewDataKey(
 		output.Plaintext,
 		output.CiphertextBlob,
@@ -104,7 +125,14 @@ func (provider *Provider) GenerateDataKey(
 
 // DecryptDataKey unwraps one data key with its exact key and context. It rejects
 // key references and ciphertext blobs larger than AWS KMS request limits before
-// copying or I/O.
+// copying or I/O. Requires non-nil ctx, a nonempty reference of at most 2048
+// bytes, 1 through 6144 wrapped bytes and a valid Context. It copies ciphertext
+// before the client call and fixes SYMMETRIC_DEFAULT. Success transfers exactly
+// 32 plaintext bytes only when output KeyId matches the requested reference and
+// output algorithm matches. Invalid successful output is cleared and rejected;
+// errors return nil with ErrClientRequired, ErrInvalidRequest, ErrInvalidResponse,
+// or an error wrapping ErrKMS and only safe context causes. Clear returned key
+// bytes after use. No deadline or retry is added by the adapter.
 func (provider *Provider) DecryptDataKey(
 	ctx context.Context,
 	keyReference string,

@@ -45,6 +45,13 @@ All notable changes follow Keep a Changelog and semantic versioning.
 
 ### Documentation
 
+- Clarify structural parsing versus authentication, context canonical bytes,
+  transferred key ownership, nonce and erasure limitations, and provider-specific
+  input/failure contracts without changing cryptographic or wire behavior.
+- Correct SECRETENVELOPE-DEC-002 and SECRETENVELOPE-DEC-006 prose for structural
+  parsing and caller-owned key/nonce extension points while preserving decision
+  identities and historical digest entries.
+
 - Complete installation, package-selection, ownership, lifecycle, concurrency,
   cancellation, error, troubleshooting, performance, platform, and operational
   guidance; add a compiler-checked keyring example; and link the canonical

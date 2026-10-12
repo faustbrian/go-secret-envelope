@@ -315,6 +315,9 @@ func TestEnvelopeParsingRejectsMalformedOrOversizedInput(t *testing.T) {
 	}
 }
 
+// recordingProvider deliberately ignores wrapping/context authentication to
+// isolate local payload GCM and transferred-key cleanup. It is not a secure
+// production provider; adapter tests own wrapping authentication evidence.
 type recordingProvider struct {
 	plaintextKey          []byte
 	encryptedKey          []byte

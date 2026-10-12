@@ -23,6 +23,9 @@ import (
 
 const sdkFixtureKey = "arn:aws:kms:us-east-1:123456789012:key/fixture"
 
+// sdkFixtureClient crosses the real pinned SDK serializer with a supplied
+// synthetic transport, anonymous credentials and one attempt. No AWS service,
+// permissions, credential chain or live signature primitive is exercised.
 func sdkFixtureClient(transport sdkHTTPClientFunc) *kms.Client {
 	return kms.New(kms.Options{
 		Region: "us-east-1", Credentials: aws.AnonymousCredentials{},

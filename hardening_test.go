@@ -592,6 +592,8 @@ func TestServiceRejectsInvalidDecryptRequestsAndKeys(t *testing.T) {
 	}
 }
 
+// validTestEnvelope supplies structurally valid fields, not authenticated
+// ciphertext. It exercises framing/admission rather than a usable GCM payload.
 func validTestEnvelope() Envelope {
 	return Envelope{
 		keyReference:     "alias/location-contracts",

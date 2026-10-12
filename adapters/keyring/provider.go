@@ -1,5 +1,14 @@
 // Package keyring wraps envelope data keys with versioned AES-256 keys that
-// are supplied by the application's secret-delivery boundary.
+// are supplied by the application's secret-delivery boundary. Start with New
+// and pass its Provider to secretenvelope.NewService for managed data-key use.
+// The adapter requires no cgo, cloud client or service and starts no background
+// work. It owns copied in-process keys, not secret retrieval or rotation policy.
+//
+// AES-256-GCM uses the fixed NIST SP 800-38D (November 2007) profile; the wrapped
+// key bytes and reference/context binding are repository-owned version 1 policy
+// (SECRETENVELOPE-DEC-001/005 in docs/specification-decisions.md), not a standard
+// key-wrap format or FIPS-validation claim. Keys remain until runtime reclamation;
+// no destruction method or complete erasure guarantee exists.
 package keyring
 
 import (
@@ -27,16 +36,24 @@ const (
 )
 
 var (
+	// ErrInvalidKeyring reports invalid construction or an unusable nil/zero Provider.
 	ErrInvalidKeyring = errors.New("keyring configuration is invalid")
+	// ErrInvalidRequest reports missing context or an invalid reference/binding.
 	ErrInvalidRequest = errors.New("keyring data-key request is invalid")
-	ErrKeyNotFound    = errors.New("keyring key reference is unavailable")
-	ErrEntropy        = errors.New("keyring entropy failed")
+	// ErrKeyNotFound reports a reference absent from the immutable keyring; no fallback occurs.
+	ErrKeyNotFound = errors.New("keyring key reference is unavailable")
+	// ErrEntropy reports data-key or nonce-read failure without retaining the reader cause.
+	ErrEntropy = errors.New("keyring entropy failed")
+	// ErrAuthentication reports malformed wrapped bytes or failed GCM authentication.
 	ErrAuthentication = errors.New("keyring data-key authentication failed")
 )
 
 // Provider wraps fresh envelope data keys with an immutable versioned keyring.
 // It is safe for concurrent use. Keys remain in process memory for the
 // provider's lifetime and are never included in text, JSON, or slog output.
+// Its zero value is unusable. The provider starts no background work and has no
+// Close/destruction method; wrapping keys and transient AES-expanded copies are
+// not guaranteed to be erased by runtime reclamation.
 type Provider struct {
 	keys    map[string][secretenvelope.DataKeySize]byte
 	entropy io.Reader
@@ -44,7 +61,11 @@ type Provider struct {
 
 // New validates and copies a non-empty keyring. Each value must contain
 // exactly 32 bytes and each stable reference must remain available while
-// ciphertext bearing that reference can still be read.
+// ciphertext bearing that reference can still be read. Accepts 1 through 32
+// entries with nonempty UTF-8 references of at most 2048 bytes, no controls or
+// surrounding whitespace. Failure returns nil and ErrInvalidKeyring. Input
+// bytes are not cleared; callers own cleanup and must supply unpredictable keys.
+// Construction does not test key strength or fetch/rotate secret material.
 func New(keys map[string][]byte) (*Provider, error) {
 	if len(keys) == 0 || len(keys) > maximumKeys {
 		return nil, ErrInvalidKeyring
@@ -67,7 +88,12 @@ func New(keys map[string][]byte) (*Provider, error) {
 }
 
 // GenerateDataKey creates a fresh data key and wraps it under the requested
-// versioned key reference with the canonical encryption context as AAD.
+// versioned key reference and canonical Context as AAD. Success transfers the
+// new plaintext/wrapped slices in a DataKey; use Service to clear its private
+// plaintext after managed use. Failure returns a zero DataKey with
+// ErrInvalidKeyring, ErrInvalidRequest, ErrKeyNotFound, ErrEntropy, or ctx.Err().
+// Cancellation is checked before local work; entropy reads and AES-GCM are not
+// interruptible, and no retry or deadline is added.
 func (provider *Provider) GenerateDataKey(
 	ctx context.Context,
 	keyReference string,
@@ -104,7 +130,12 @@ func (provider *Provider) GenerateDataKey(
 }
 
 // DecryptDataKey authenticates and unwraps a data key with the exact retained
-// key reference and canonical encryption context.
+// key reference and canonical encryption context. Input is borrowed, not
+// mutated/retained; successful plaintext is caller-owned and must be cleared
+// after use. The private encoding is exactly 61 bytes: version 1, 12-byte nonce,
+// 32 encrypted key bytes and a 16-byte tag. Malformed/tampered bytes return nil
+// and ErrAuthentication; request/configuration failures match GenerateDataKey.
+// Cancellation is checked only before bounded local cryptographic work.
 func (provider *Provider) DecryptDataKey(
 	ctx context.Context,
 	keyReference string,
@@ -180,6 +211,9 @@ func (provider *Provider) wrap(
 		zero(nonce)
 		return nil, ErrEntropy
 	}
+	// Allocate exactly the private wire size before sealing, including nonce
+	// and tag. TestProviderUsesExactBoundedWireAllocations protects the bounded
+	// result shape; it is not a general throughput claim.
 	wrapped := make([]byte, 1, 1+len(nonce)+len(plaintext)+
 		authenticatedCipher.Overhead())
 	wrapped[0] = wrappedDataKeyVersion
@@ -196,6 +230,10 @@ func (provider *Provider) wrap(
 	return wrapped, nil
 }
 
+// NIST specifies AAD, not this concatenation. Prefixing the exact reference
+// length prevents boundary ambiguity and binds rotation identity even if two
+// references accidentally contain the same key bytes (SECRETENVELOPE-DEC-005;
+// TestProviderAuthenticatesReferenceContextAndCiphertext).
 func authenticatedData(keyReference string, context []byte) []byte {
 	encoded := make([]byte, 4, 4+len(keyReference)+len(context))
 	// #nosec G115 -- production callers validate references at 2048 bytes.
@@ -226,7 +264,10 @@ func zero(value []byte) {
 	}
 }
 
-func (*Provider) String() string   { return redacted }
+// String returns [REDACTED] even for a nil Provider.
+func (*Provider) String() string { return redacted }
+
+// GoString redacts the Go-syntax representation, including all wrapping keys.
 func (*Provider) GoString() string { return redacted }
 
 // LogValue prevents wrapping keys from entering structured logs.

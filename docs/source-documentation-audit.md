@@ -141,3 +141,11 @@ contracts. These are missing/underspecified prose, not behavioral defects.
 This audit does not claim hosted CI, remote-main delivery, public release or
 live cryptographic-provider qualification. The committed source worktree stays
 available for coordinator delivery.
+
+## Objective enforcement adoption
+
+The local `source-docs-check` target is required by ordinary/full checks and CI.
+Ordinary shared CI uses `source_documentation: check` with immutable Tools
+v2.4.0 and matching authenticated binary/checksum declaration. Separately
+selected qualification source identities and gates remain unchanged. Structural
+checks do not replace this maintained semantic audit or native docs/examples.

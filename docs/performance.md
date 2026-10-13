@@ -1,5 +1,7 @@
 # Performance
 
+[Documentation index](README.md)
+
 The maintained `BenchmarkServiceRoundTrip` exercises one 1 KiB encrypt and
 decrypt round trip, including service construction, envelope construction,
 AES-256-GCM encryption and decryption, copying, and best-effort data-key
@@ -32,3 +34,5 @@ read or local AES-GCM encryption or decryption.
 
 Do not weaken authentication, input bounds, nonce uniqueness, key zeroization,
 or redaction to improve a microbenchmark result.
+
+Continue with [API and persistence](api.md).

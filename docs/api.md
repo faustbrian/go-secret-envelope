@@ -1,5 +1,7 @@
 # API and persistence
 
+[Documentation index](README.md)
+
 `NewContext` creates immutable, canonically ordered non-secret associated data.
 `NewService` requires a `KeyProvider` and defaults nonce generation to
 `crypto/rand.Reader`. `Encrypt` returns an immutable `Envelope`; `Decrypt`

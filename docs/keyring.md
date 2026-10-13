@@ -1,5 +1,7 @@
 # Versioned keyring operations
 
+[Documentation index](README.md)
+
 The keyring adapter accepts one to 32 named AES-256 wrapping keys supplied by
 the application. It copies the input map and keys, generates a fresh 32-byte
 data key and 12-byte wrapping nonce for every encryption, and authenticates the
@@ -33,3 +35,5 @@ Keyring material remains in process memory for the provider lifetime and must
 be delivered through an encrypted, access-controlled secret manager. Do not
 commit it, place it in container layers, expose it through configuration
 inventories, or persist it beside the ciphertext it protects.
+
+Continue with [API and persistence](api.md).

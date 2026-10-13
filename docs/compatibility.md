@@ -1,5 +1,7 @@
 # Compatibility
 
+[Documentation index](README.md)
+
 The module requires Go 1.27.0. Public API and binary persistence changes follow
 semantic versioning after the first release.
 
@@ -33,3 +35,5 @@ one version byte, a 12-byte AES-GCM nonce, and a 32-byte data key plus its
 16-byte authentication tag. The key reference and canonical context are AAD.
 Changing this representation, reference binding, or key size is a compatibility
 change for envelopes created through that adapter.
+
+Continue with [API and persistence](api.md).

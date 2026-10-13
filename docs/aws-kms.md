@@ -1,5 +1,7 @@
 # AWS KMS operations
 
+[Documentation index](README.md)
+
 The adapter uses `GenerateDataKey` with `AES_256` and `Decrypt` with
 `SYMMETRIC_DEFAULT`. Both calls include the exact case-sensitive encryption
 context. When the provider is used through `Service`, the generated plaintext
@@ -59,3 +61,5 @@ remains an application policy decision.
 `NewSignatureVerifier` likewise borrows its client for the verifier lifetime.
 The verifier copies each message and signature before invoking KMS, starts no
 background work, and inherits concurrency support from that client.
+
+Continue with [API and persistence](api.md).

@@ -1,5 +1,7 @@
 # Security
 
+[Documentation index](README.md)
+
 ## Threat model version
 
 - Model: `SECRET-ENVELOPE-THREAT-MODEL-v2`
@@ -106,3 +108,5 @@ provider I/O. Calls through `Service` also inherit its stricter envelope bounds.
 | `SE-RISK-003` | Medium | Application operator | Go does not guarantee complete erasure of compiler, stack, runtime, or garbage-collector copies of secret bytes. | Service best-effort zeroizes transferred plaintext data keys; callers minimize plaintext lifetime, restrict process access, and disable unsafe dumps. | Revisit when Go provides enforceable secret-memory primitives or memory exposure is observed. |
 | `SE-RISK-004` | Medium | Application integrator | A valid old envelope or signed statement is indistinguishable from an authorized replay without application state and time policy. | Bind stable owner, record, and field identity in context; persist versions or replay keys transactionally; include and validate statement purpose and expiry before accepting a signature. | Revisit if the module adds durable state, timestamp policy, or any replay-prevention claim. |
 | `SE-RISK-005` | Medium | Direct provider caller | `DataKey` intentionally hides plaintext and exposes no destruction method, so direct provider use cannot request early clearing. | Use `Service` for managed encryption; direct callers keep the value short-lived and rely on process controls. The API and KMS guide document ownership. | Revisit for a v2 ownership redesign or evidence that direct provider use is common. |
+
+Continue with [API and persistence](api.md).

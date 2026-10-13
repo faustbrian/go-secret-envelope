@@ -1,5 +1,7 @@
 # Architecture
 
+[Documentation index](README.md)
+
 The root package owns authenticated local encryption, immutable context,
 versioned framing, limits, redaction, and the key-provider contract. It has no
 cloud SDK import. The released root v1 module also contains the AWS KMS adapter,
@@ -30,3 +32,5 @@ per-row persistence substitutes.
 The packages create no goroutines, timers, connections, or background cleanup.
 Applications own injected providers and clients, their transports and retry
 configuration, and any external resource shutdown.
+
+Continue with [API and persistence](api.md).

@@ -1,5 +1,7 @@
 # Frequently asked questions
 
+[Documentation index](README.md)
+
 ## Is encryption context secret?
 
 No. Context is authenticated associated data and AWS KMS can record it in

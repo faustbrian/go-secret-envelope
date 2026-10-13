@@ -1,5 +1,7 @@
 # Source documentation audit
 
+[Documentation index](README.md)
+
 ## Scope and acceptance
 
 Tier A source/API prose pass owned by the assigned documentation worker.

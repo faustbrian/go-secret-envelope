@@ -3,9 +3,9 @@ module github.com/faustbrian/go-secret-envelope/v2
 go 1.27.0
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.47.2
+	github.com/aws/aws-sdk-go-v2 v1.47.3
 	github.com/aws/aws-sdk-go-v2/service/kms v1.61.3
-	github.com/aws/smithy-go v1.28.4
+	github.com/aws/smithy-go v1.28.5
 )
 
 require (
